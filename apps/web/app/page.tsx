@@ -9,8 +9,8 @@ export default function HomePage() {
   return (
     <main className="bg-black overflow-x-hidden w-full relative flex flex-col items-center pb-0">
       <HeroSection />
-      <StatsSection />
       <FeaturesSection />
+      <StatsSection />
       <WorkflowSection />
       <CtaSection />
       <Footer />
