@@ -113,7 +113,7 @@ export default function JobsPage() {
     )
 }
 
-function TabBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+function TabBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
     return (
         <button
             onClick={onClick}

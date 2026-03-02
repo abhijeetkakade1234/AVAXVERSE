@@ -10,9 +10,12 @@
     "dev": "bun run --cwd apps/web dev",
     "build": "bun run --cwd apps/web build",
     "test": "bun run --cwd packages/contracts test",
-    "lint": "bun run --cwd apps/web lint"
+    "lint": "bun run --cwd apps/web lint",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.1",
     "prettier": "^3.0.0"
   }
 }

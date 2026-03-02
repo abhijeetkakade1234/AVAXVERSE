@@ -238,9 +238,9 @@ export function AnimatedShaderHero({
                 {/* Brand Presence */}
                 <div className="avax-anim-down mb-6 avax-delay-0 flex justify-center w-full">
                     <span
-                        className="text-2xl md:text-3xl font-black tracking-[1em] uppercase text-red-500 pl-[1em]"
+                        className="text-xl md:text-2xl font-black tracking-[0.5em] uppercase text-red-500 pl-[0.5em]"
                         style={{
-                            textShadow: '0 0 40px rgba(232,65,66,0.8), 0 0 10px rgba(232,65,66,0.4)',
+                            textShadow: '0 0 40px rgba(232,65,66,0.6), 0 0 10px rgba(232,65,66,0.3)',
                             fontFamily: 'var(--font-inter)'
                         }}
                     >
@@ -259,9 +259,9 @@ export function AnimatedShaderHero({
                 )}
 
                 {/* Headline */}
-                <div className="text-center space-y-2 max-w-5xl mx-auto">
+                <div className="text-center space-y-1 max-w-6xl mx-auto">
                     <h1
-                        className="avax-anim-up avax-delay-1 text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none"
+                        className="avax-anim-up avax-delay-1 text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none"
                         style={{
                             background: 'linear-gradient(135deg, #ff6b6b 0%, #E84142 40%, #c0392b 100%)',
                             WebkitBackgroundClip: 'text',
@@ -272,7 +272,7 @@ export function AnimatedShaderHero({
                         {headline.line1}
                     </h1>
                     <h1
-                        className="avax-anim-up avax-delay-2 text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none"
+                        className="avax-anim-up avax-delay-2 text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none"
                         style={{
                             background: 'linear-gradient(135deg, #fff 0%, #ffd6d6 50%, #ff9999 100%)',
                             WebkitBackgroundClip: 'text',
@@ -285,28 +285,28 @@ export function AnimatedShaderHero({
                 </div>
 
                 {/* Subtitle */}
-                <p className="avax-anim-up avax-delay-3 mt-6 max-w-2xl text-center text-lg md:text-xl text-white/70 font-light leading-relaxed">
+                <p className="avax-anim-up avax-delay-3 mt-8 max-w-xl text-center text-base md:text-lg text-white/60 font-medium leading-relaxed">
                     {subtitle}
                 </p>
 
                 {/* Buttons */}
                 {buttons && (
-                    <div className="avax-anim-up avax-delay-4 flex flex-col sm:flex-row gap-4 mt-10">
+                    <div className="avax-anim-up avax-delay-4 flex flex-col sm:flex-row gap-3 mt-8">
                         {buttons.primary && (
                             <button
                                 onClick={buttons.primary.onClick}
-                                className="flex items-center justify-center gap-2 px-8 py-4 rounded-full font-semibold text-base text-white transition-all duration-300 hover:scale-105"
+                                className="flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-bold text-sm text-white transition-all duration-300 hover:scale-[1.02]"
                                 style={{
                                     background: 'linear-gradient(135deg, #E84142, #c0392b)',
-                                    boxShadow: '0 8px 32px rgba(232,65,66,0.4)',
+                                    boxShadow: '0 4px 20px rgba(232,65,66,0.3)',
                                 }}
                                 onMouseEnter={(e) => {
                                     ; (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                                        '0 12px 40px rgba(232,65,66,0.6)'
+                                        '0 8px 32px rgba(232,65,66,0.5)'
                                 }}
                                 onMouseLeave={(e) => {
                                     ; (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                                        '0 8px 32px rgba(232,65,66,0.4)'
+                                        '0 4px 20px rgba(232,65,66,0.3)'
                                 }}
                             >
                                 {buttons.primary.icon}
@@ -316,7 +316,7 @@ export function AnimatedShaderHero({
                         {buttons.secondary && (
                             <button
                                 onClick={buttons.secondary.onClick}
-                                className="flex items-center justify-center gap-2 px-8 py-4 rounded-full font-semibold text-base text-white/80 border border-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-white/10 hover:border-white/30"
+                                className="flex items-center justify-center gap-2 px-7 py-3 rounded-xl font-bold text-sm text-white/80 border border-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-white/5 hover:border-white/20"
                             >
                                 {buttons.secondary.icon}
                                 {buttons.secondary.text}
