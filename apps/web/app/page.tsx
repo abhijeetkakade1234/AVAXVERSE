@@ -1,5 +1,5 @@
 import { HeroSection } from '@/components/landing/HeroSection'
-import { StatsSection } from '@/components/landing/StatsSection'
+// import { StatsSection } from '@/components/landing/StatsSection'
 import { FeaturesSection } from '@/components/landing/FeaturesSection'
 import { WorkflowSection } from '@/components/landing/WorkflowSection'
 import { CtaSection } from '@/components/landing/CtaSection'
@@ -10,7 +10,7 @@ export default function HomePage() {
     <main className="bg-black overflow-x-hidden w-full relative flex flex-col items-center pb-0">
       <HeroSection />
       <FeaturesSection />
-      <StatsSection />
+      {/* <StatsSection /> */}
       <WorkflowSection />
       <CtaSection />
       <Footer />
