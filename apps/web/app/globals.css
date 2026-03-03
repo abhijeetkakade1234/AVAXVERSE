@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --color-foreground: #f0f0f2;
+  --color-muted-foreground: rgba(255, 255, 255, 0.42);
+  --color-border: rgba(255, 255, 255, 0.12);
+}
+
 /* ── Design Tokens ── */
 :root {
   --avax-red: #E84142;
@@ -12,7 +18,13 @@
   --avax-muted: rgba(255, 255, 255, 0.42);
   --font-inter: 'Inter', sans-serif;
   color-scheme: dark;
+
+  /* shadcn-compatible tokens for UI components */
+  --foreground: #f0f0f2;
+  --muted-foreground: rgba(255, 255, 255, 0.42);
+  --border: rgba(255, 255, 255, 0.07);
 }
+
 
 /* ── Reset ── */
 *,
