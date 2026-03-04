@@ -21,26 +21,27 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
     }, []);
 
     return (
-        <div className={cn('relative overflow-hidden p-10 md:p-12 pb-24 md:pb-32 min-h-[200px] md:min-h-[140px] border border-dashed rounded-xl', className)} {...props}>
+        <div className={cn('relative overflow-hidden p-10 md:p-12 pb-24 md:pb-32 min-h-[200px] md:min-h-[140px] rounded-2xl relative group', className)} {...props}>
+            <div className="absolute inset-0 bg-[#f42525]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-2xl"></div>
+
             <div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]">
-                <div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
+                <div className="from-white/5 to-transparent absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
                     <GridPattern
                         width={20}
                         height={20}
                         x="-12"
                         y="4"
                         squares={p}
-                        className="fill-foreground/5 stroke-foreground/25 absolute inset-0 h-full w-full mix-blend-overlay"
+                        className="fill-white/5 stroke-white/10 absolute inset-0 h-full w-full mix-blend-overlay"
                     />
                 </div>
             </div>
 
             <div className="flex items-center gap-4 relative z-30">
-                <feature.icon className="text-foreground/75 size-7 md:size-8" strokeWidth={1} aria-hidden />
-                <h3 className="text-base md:text-xl font-semibold tracking-tight">{feature.title}</h3>
+                <feature.icon className="text-[#f42525] size-7 md:size-8" strokeWidth={1.5} aria-hidden />
+                <h3 className="text-white text-base md:text-xl font-semibold tracking-tight">{feature.title}</h3>
             </div>
-            <br />
-            <p className="text-muted-foreground relative z-20 mt-6 text-sm md:text-base font-light leading-relaxed">
+            <p className="text-slate-400 relative z-20 mt-6 text-sm md:text-base font-light leading-relaxed">
                 {feature.description}
             </p>
         </div>

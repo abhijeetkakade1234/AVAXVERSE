@@ -1,59 +1,107 @@
-import React from 'react';
-import { Zap, Network, Activity } from 'lucide-react';
-import Image from 'next/image';
+'use client';
+import { Shield, Lock, Award, BarChart3, DollarSign, Zap, Rocket, Link } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
+import { FeatureCard } from '@/components/ui/grid-feature-cards';
+
+const features = [
+    {
+        title: 'Sovereign Identity',
+        icon: Shield,
+        description: 'Your wallet is your passport. Verifiable credentials that belong to you, not a database.',
+    },
+    {
+        title: 'Atomic Escrow',
+        icon: Lock,
+        description: 'Smart contracts act as neutral arbiters. Payment is released only when milestones are verified.',
+    },
+    {
+        title: 'Proof of Reputation',
+        icon: Award,
+        description: 'Earn non-transferable badges for every successful mission. Your history is your capital.',
+    },
+    {
+        title: 'On-Chain Governance',
+        icon: BarChart3,
+        description: 'The protocol is governed by the users. Propose, vote, and evolve the ecosystem together.',
+    },
+    {
+        title: 'Trustless Payments',
+        icon: DollarSign,
+        description: 'Direct peer-to-peer value transfer without intermediaries or hidden fees.',
+    },
+    {
+        title: 'Hyper-Secure Speed',
+        icon: Zap,
+        description: "Leveraging Avalanche's sub-second finality for near-instant transaction settlement.",
+    },
+    {
+        title: 'DAO Incubation',
+        icon: Rocket,
+        description: 'Tools to launch and scale your own decentralized autonomous organization effortlessly.',
+    },
+    {
+        title: 'Universal Connectivity',
+        icon: Link,
+        description: 'Cross-chain interoperability to connect with the broader Web3 ecosystem seamlessly.',
+    },
+];
 
 export function FeaturesSection() {
     return (
-        <section className="py-24 container mx-auto px-6 relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-16">
-                <div className="lg:w-1/2">
-                    <h2 className="text-4xl font-black text-white mb-6 leading-tight">
-                        Powered by <span className="text-[#f42525]">Avalanche</span> Consensus
-                    </h2>
-                    <p className="text-slate-400 text-lg mb-10 leading-relaxed">
-                        High-performance nodes ensuring instantaneous finality and ultra-low fees for every step of your professional journey in the decentralized world.
-                    </p>
-                    <div className="space-y-6">
-                        <div className="flex gap-4 items-start p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
-                            <Zap className="text-[#f42525] w-8 h-8 shrink-0" />
-                            <div>
-                                <h4 className="text-white font-bold mb-1">Instant Finality</h4>
-                                <p className="text-slate-400 text-sm">Experience sub-second transaction confirmation for all milestones.</p>
-                            </div>
+        <section className="relative py-20 md:py-36 overflow-visible z-10">
+            {/* Subtle Gradient connecting previous section */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+            <div className="relative mx-auto w-full max-w-[90rem] space-y-16 px-4 md:px-8">
+                <div className="w-full flex justify-center">
+                    <AnimatedContainer className="mx-auto max-w-3xl text-center flex flex-col items-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f42525]/10 border border-[#f42525]/20 text-[#f42525] text-xs font-bold uppercase tracking-widest mb-6">
+                            <span>Core Features</span>
                         </div>
-                        <div className="flex gap-4 items-start p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
-                            <Network className="text-[#f42525] w-8 h-8 shrink-0" />
-                            <div>
-                                <h4 className="text-white font-bold mb-1">Decentralized Trust</h4>
-                                <p className="text-slate-400 text-sm">No intermediaries. Just code, consensus, and clear outcomes.</p>
-                            </div>
-                        </div>
-                    </div>
+                        <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
+                            A New Era of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f42525] to-orange-500">Trust</span>
+                        </h2>
+                        <p className="text-slate-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
+                            Engineered for the decentralized frontier. Built on Avalanche for speed, security, and absolute reliability.
+                        </p>
+                    </AnimatedContainer>
                 </div>
-                <div className="lg:w-1/2 relative">
-                    <div className="absolute -inset-4 bg-[#f42525]/20 blur-3xl rounded-full"></div>
-                    <div className="relative rounded-3xl border border-white/10 overflow-hidden bg-slate-900 shadow-2xl">
-                        <Image
-                            width={800}
-                            height={600}
-                            className="w-full h-auto opacity-80"
-                            alt="Abstract 3D network nodes visualization"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQwTdkrKJq1q-dqikQBSSg7pu0YziO2CnzTUou2h36AW8OwQeo18Fq8LEONaSbzzZvlzb6eKHor5soStF_dlrcUqHxvCoXXufEKFaIzwRQ8m9E6IERl7eb98fsb0mCQIYqnqRKHUNMq1WbSmJZYl3uMMLu7AsrWRDKN1B3A8AAM2nyL5HKpFa5vbLuYUpfpuxpO_nDhG5vcXcdAAM5ngjksZ4M4ckLl0l7zzLZCQfKp8aYCcvTpNRBq96VNQpL63Bv3ouJ6Ojb5VM"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-slate-900 to-transparent">
-                            <div className="flex items-center justify-between">
-                                <div className="text-white">
-                                    <p className="text-xs uppercase tracking-widest text-[#f42525] font-bold mb-1">Network Status</p>
-                                    <p className="text-2xl font-black">99.9% Efficiency</p>
-                                </div>
-                                <div className="h-12 w-12 bg-[#f42525]/20 rounded-full flex items-center justify-center border border-[#f42525]/40">
-                                    <Activity className="text-[#f42525] w-6 h-6" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+                <AnimatedContainer
+                    delay={0.4}
+                    className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                >
+                    {features.map((feature, i) => (
+                        <FeatureCard key={i} feature={feature} className="glass-node bg-white/5 border border-white/5 hover:border-[#f42525]/30 transition-all duration-300 group" />
+                    ))}
+                </AnimatedContainer>
             </div>
         </section>
+    );
+}
+
+type ViewAnimationProps = {
+    delay?: number;
+    className?: React.ComponentProps<typeof motion.div>['className'];
+    children: React.ReactNode;
+};
+
+function AnimatedContainer({ className, delay = 0.1, children }: ViewAnimationProps) {
+    const shouldReduceMotion = useReducedMotion();
+
+    if (shouldReduceMotion) {
+        return children;
+    }
+
+    return (
+        <motion.div
+            initial={{ filter: 'blur(4px)', translateY: -8, opacity: 0 }}
+            whileInView={{ filter: 'blur(0px)', translateY: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay, duration: 0.8 }}
+            className={className}
+        >
+            {children}
+        </motion.div>
     );
 }

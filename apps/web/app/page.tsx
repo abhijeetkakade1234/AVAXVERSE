@@ -1,6 +1,8 @@
 import { HeroSection } from '@/components/landing/HeroSection'
 import { FeaturesSection } from '@/components/landing/FeaturesSection'
+import { AvalancheSection } from '@/components/landing/AvalancheSection'
 import { WorkflowSection } from '@/components/landing/WorkflowSection'
+import { StatsSection } from '@/components/landing/StatsSection'
 import { CtaSection } from '@/components/landing/CtaSection'
 import { Footer } from '@/components/Footer'
 
@@ -11,6 +13,8 @@ export default function HomePage() {
       <div className="relative z-10 w-full">
         <WorkflowSection />
         <FeaturesSection />
+        <AvalancheSection />
+        <StatsSection />
         <CtaSection />
       </div>
       <Footer />
