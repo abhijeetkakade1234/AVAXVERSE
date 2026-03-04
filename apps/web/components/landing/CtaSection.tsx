@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { Reveal } from '@/components/ui/reveal'
 
 export function CtaSection() {
-    const router = useRouter()
+    const router = useRouter();
 
     return (
         <section className="relative w-full py-40 md:py-64 flex flex-col items-center justify-center overflow-hidden bg-black">
