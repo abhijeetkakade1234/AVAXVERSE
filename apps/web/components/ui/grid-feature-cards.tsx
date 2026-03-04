@@ -21,7 +21,7 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
     }, []);
 
     return (
-        <div className={cn('relative overflow-hidden p-10 md:p-12 pb-24 md:pb-32 min-h-[200px] md:min-h-[140px] rounded-2xl relative group', className)} {...props}>
+        <div className={cn('relative overflow-hidden p-10 md:p-12 pb-24 md:pb-32 min-h-[200px] md:min-h-[140px] rounded-2xl group', className)} {...props}>
             <div className="absolute inset-0 bg-[#f42525]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-2xl"></div>
 
             <div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]">
