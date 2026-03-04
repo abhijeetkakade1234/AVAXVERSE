@@ -48,35 +48,36 @@ const features = [
 
 export function FeaturesSection() {
     return (
-        <section className="relative py-20 md:py-36 overflow-visible z-10">
-            {/* Subtle Gradient connecting previous section */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-            <div className="relative mx-auto w-full max-w-[90rem] space-y-16 px-4 md:px-8">
+        <section className="relative py-20 md:py-36 overflow-hidden ">
+            <div className="relative mx-auto w-full max-w-[90rem] space-y-24 px-4 md:px-8">
                 <div className="w-full flex justify-center">
                     <AnimatedContainer className="mx-auto max-w-3xl text-center flex flex-col items-center">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f42525]/10 border border-[#f42525]/20 text-[#f42525] text-xs font-bold uppercase tracking-widest mb-6">
-                            <span>Core Features</span>
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
-                            A New Era of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f42525] to-orange-500">Trust</span>
+                        <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl xl:font-extrabold">
+                            A New Era of <span className="text-[#E84142]">Trust.</span>
                         </h2>
-                        <p className="text-slate-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
+                        <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base">
                             Engineered for the decentralized frontier. Built on Avalanche for speed, security, and absolute reliability.
                         </p>
+                        <br />
+                        <br />
                     </AnimatedContainer>
                 </div>
 
                 <AnimatedContainer
                     delay={0.4}
-                    className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 "
                 >
+
                     {features.map((feature, i) => (
-                        <FeatureCard key={i} feature={feature} className="glass-node bg-white/5 border border-white/5 hover:border-[#f42525]/30 transition-all duration-300 group" />
+                        <FeatureCard key={i} feature={feature} />
                     ))}
                 </AnimatedContainer>
             </div>
+
+            {/* Bottom spacer */}
+            <div className="h-16 md:h-24" />
         </section>
+
     );
 }
 
