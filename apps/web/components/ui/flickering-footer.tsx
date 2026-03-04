@@ -2,7 +2,6 @@
 
 import { ChevronRight } from "lucide-react";
 import * as Color from "color-bits";
-import { motion } from "motion/react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
