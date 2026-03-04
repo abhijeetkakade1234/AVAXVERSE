@@ -351,3 +351,33 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+/* ─────────────────────────────────────────────
+   AVAXVERSE SPECIFIC (From Design Reference)
+───────────────────────────────────────────── */
+.glass-node {
+  background: rgba(232, 65, 66, 0.05); /* using var(--avax-red) */
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 65, 66, 0.2);
+  box-shadow: 0 0 20px rgba(232, 65, 66, 0.1);
+}
+
+.neon-line {
+  background: linear-gradient(90deg, transparent, var(--avax-red), var(--avax-red), transparent);
+  filter: drop-shadow(0 0 8px var(--avax-red));
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at center, rgba(232, 65, 66, 0.15) 0%, transparent 70%);
+}
+
+.mountain-glow {
+  filter: drop-shadow(0 0 30px rgba(232, 65, 66, 0.3));
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
