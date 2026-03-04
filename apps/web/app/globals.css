@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+
+/* ── Fallback Utilities (Ensuring Layout Spacing if Tailwind v4 Generation Fails) ── */
+.h-screen {
+  height: 100vh;
+}
+
+.h-\[100svh\] {
+  height: 100svh;
+}
+
+.py-64 {
+  padding-top: 16rem;
+  padding-bottom: 16rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.space-y-24> :not([hidden])~ :not([hidden]) {
+  margin-top: 6rem;
+}
+
+.space-y-48> :not([hidden])~ :not([hidden]) {
+  margin-top: 12rem;
+}
+
+.space-y-64> :not([hidden])~ :not([hidden]) {
+  margin-top: 16rem;
+}
+
+.gap-8 {
+  gap: 2rem;
+}
+
+.gap-12 {
+  gap: 3rem;
+}
+
+.gap-16 {
+  gap: 4rem;
+}
+
+.gap-32 {
+  gap: 8rem;
+}
+
 @theme {
   --color-foreground: #f0f0f2;
   --color-muted-foreground: rgba(255, 255, 255, 0.42);
@@ -10,6 +58,7 @@
 :root {
   --avax-red: #E84142;
   --avax-red-dim: rgba(232, 65, 66, 0.12);
+  --avax-red-hover: rgba(232, 65, 66, 0.35);
   --avax-dark: #0a0a0f;
   --avax-surface: #111118;
   --avax-surface-2: #16161f;

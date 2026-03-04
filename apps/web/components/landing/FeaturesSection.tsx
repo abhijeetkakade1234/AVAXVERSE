@@ -1,61 +1,95 @@
-import React from 'react';
-import { Zap, Network, Activity } from 'lucide-react';
-import Image from 'next/image';
+'use client'
+
+import React from 'react'
+import { Shield, Lock, Award, BarChart3, DollarSign, Zap } from 'lucide-react'
+import { Reveal } from '@/components/ui/reveal'
+
+const features = [
+    {
+        title: 'Sovereign Identity',
+        icon: Shield,
+        desc: 'Complete control over your digital persona with decentralized identifiers and private verifiable credentials.',
+    },
+    {
+        title: 'Atomic Escrow',
+        icon: Lock,
+        desc: 'Secure, automated asset holding and release mechanisms for peer-to-peer trades with zero counterparty risk.',
+    },
+    {
+        title: 'Proof of Reputation',
+        icon: Award,
+        desc: 'Build trust through verified on-chain history and community contribution metrics that matter.',
+    },
+    {
+        title: 'On-Chain Governance',
+        icon: BarChart3,
+        desc: 'Participate in the evolution of the network through transparent, tamper-proof voting and proposal systems.',
+    },
+    {
+        title: 'Trustless Payments',
+        icon: DollarSign,
+        desc: 'Instant, borderless transactions with zero reliance on third-party intermediaries or centralized gateways.',
+    },
+    {
+        title: 'Sub-second Finality',
+        icon: Zap,
+        desc: 'Experience lightning-fast transaction confirmation powered by the advanced Avalanche consensus engine.',
+    },
+]
 
 export function FeaturesSection() {
     return (
-        <section className="py-24 w-full bg-[#0a0a0f]">
-            <div className="container mx-auto px-6 max-w-7xl">
-                <div className="flex flex-col lg:flex-row items-center gap-16">
-                    <div className="lg:w-1/2">
-                        <h2 className="text-4xl font-black text-white mb-6 leading-tight">
-                            Powered by <span className="text-[#E84142]">Avalanche</span> Consensus
+        <section className="relative py-40 md:py-64 px-6 bg-black overflow-hidden flex flex-col items-center">
+            {/* Bottom Edge Glow */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-[var(--avax-red)]/5 blur-[120px] rounded-full pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto w-full space-y-20 md:space-y-32">
+                {/* Header */}
+                <div className="text-center space-y-6 max-w-3xl mx-auto">
+                    <Reveal direction="up">
+                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[var(--avax-red)]/20 bg-[var(--avax-red)]/5 backdrop-blur-md">
+                            <span className="text-[10px] font-black tracking-[0.3em] text-[var(--avax-red)] uppercase">Core Engine</span>
+                        </div>
+                    </Reveal>
+                    <Reveal direction="up" delay={0.1}>
+                        <h2 className="text-4xl md:text-7xl font-black tracking-tighter text-white leading-[0.95]">
+                            Built for the{' '}
+                            <span className="gradient-text italic">Frontier</span>
                         </h2>
-                        <p className="text-slate-400 text-lg mb-10 leading-relaxed">
-                            High-performance nodes ensuring instantaneous finality and ultra-low fees for every step of your professional journey in the decentralized world.
+                    </Reveal>
+                    <Reveal direction="up" delay={0.2}>
+                        <p className="text-lg md:text-xl text-[var(--avax-muted)] font-light leading-relaxed max-w-2xl mx-auto">
+                            A high-performance infrastructure designed for the next generation of decentralized applications.
                         </p>
-                        <div className="space-y-6">
-                            <div className="flex gap-4 items-start p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
-                                <Zap className="text-[#E84142] w-8 h-8 shrink-0" />
-                                <div>
-                                    <h4 className="text-white font-bold mb-1">Instant Finality</h4>
-                                    <p className="text-slate-400 text-sm">Experience sub-second transaction confirmation for all milestones.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4 items-start p-6 rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm">
-                                <Network className="text-[#E84142] w-8 h-8 shrink-0" />
-                                <div>
-                                    <h4 className="text-white font-bold mb-1">Decentralized Trust</h4>
-                                    <p className="text-slate-400 text-sm">No intermediaries. Just code, consensus, and clear outcomes.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="lg:w-1/2 relative w-full">
-                        <div className="absolute -inset-4 bg-[#E84142]/20 blur-3xl rounded-full"></div>
-                        <div className="relative rounded-3xl border border-white/10 overflow-hidden bg-slate-900 shadow-2xl">
-                            <Image
-                                width={800}
-                                height={600}
-                                className="w-full h-auto opacity-80 mix-blend-screen"
-                                alt="Abstract 3D network nodes visualization"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQwTdkrKJq1q-dqikQBSSg7pu0YziO2CnzTUou2h36AW8OwQeo18Fq8LEONaSbzzZvlzb6eKHor5soStF_dlrcUqHxvCoXXufEKFaIzwRQ8m9E6IERl7eb98fsb0mCQIYqnqRKHUNMq1WbSmJZYl3uMMLu7AsrWRDKN1B3A8AAM2nyL5HKpFa5vbLuYUpfpuxpO_nDhG5vcXcdAAM5ngjksZ4M4ckLl0l7zzLZCQfKp8aYCcvTpNRBq96VNQpL63Bv3ouJ6Ojb5VM"
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-slate-900 to-transparent">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-white">
-                                        <p className="text-xs uppercase tracking-widest text-[#E84142] font-bold mb-1">Network Status</p>
-                                        <p className="text-2xl font-black">99.9% Efficiency</p>
+                    </Reveal>
+                </div>
+
+                {/* 3x2 Feature Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    {features.map((item, i) => (
+                        <Reveal key={i} direction="up" delay={i * 0.08}>
+                            <div className="group h-full p-8 md:p-10 bg-gradient-to-br from-[#0e0e16] to-[#0a0a12] border border-white/[0.06] rounded-2xl md:rounded-3xl transition-all duration-500 hover:border-[var(--avax-red)]/25 hover:shadow-[0_0_60px_-15px_rgba(232,65,66,0.15)] relative overflow-hidden">
+                                {/* Hover corner glow */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--avax-red)]/0 group-hover:bg-[var(--avax-red)]/5 blur-3xl transition-all duration-700 rounded-full pointer-events-none" />
+
+                                <div className="relative z-10 space-y-6">
+                                    <div className="size-14 rounded-xl bg-[var(--avax-red)]/8 border border-[var(--avax-red)]/15 flex items-center justify-center text-[var(--avax-red)]/60 group-hover:text-[var(--avax-red)] group-hover:bg-[var(--avax-red)]/15 group-hover:scale-110 transition-all duration-500">
+                                        <item.icon size={26} strokeWidth={1.5} />
                                     </div>
-                                    <div className="h-12 w-12 bg-[#E84142]/20 rounded-full flex items-center justify-center border border-[#E84142]/40">
-                                        <Activity className="text-[#E84142] w-6 h-6" />
+                                    <div className="space-y-3">
+                                        <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-[var(--avax-red)] transition-colors duration-300">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-[var(--avax-muted)] text-sm md:text-base font-light leading-relaxed">
+                                            {item.desc}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </Reveal>
+                    ))}
                 </div>
             </div>
         </section>
-    );
+    )
 }
