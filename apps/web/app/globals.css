@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import "tailwindcss";
 
 @theme {
@@ -56,5 +55,34 @@
   .parallax-layer {
     position: absolute;
     will-change: transform;
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #8B82F6 0%, #E879F9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cinematic-shadow {
+    box-shadow: 0 25px 50px -12px rgba(139, 130, 246, 0.25);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(139, 130, 246, 0.3);
+    border-radius: 10px;
   }
 }
