@@ -31,35 +31,33 @@ export default function SecuritySection() {
     ]
 
     return (
-        <section className="flex flex-col gap-8">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md">
+        <>
+            <div className="flex flex-col gap-12 min-w-[300px]">
+                <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md w-fit">
                     <span className="material-icons text-white text-base">shield</span>
                     <span className="text-sm font-bold text-white uppercase tracking-wider">Your security</span>
                 </div>
-                <button className="bg-white/20 p-3 rounded-full hover:bg-white/30 transition-colors border border-white/20 backdrop-blur-md">
-                    <span className="material-icons text-white">arrow_forward</span>
-                </button>
+                <h2 className="text-5xl md:text-7xl font-bold text-white leading-tight">
+                    Built to be<br />safe & secure.
+                </h2>
             </div>
 
-            <div className="flex overflow-x-auto gap-8 pb-8 hide-scrollbar snap-x">
-                {features.map((feature, index) => (
-                    <div
-                        key={index}
-                        className={`snap-start flex-none w-[320px] h-[420px] ${feature.bg} rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group overflow-hidden`}
-                    >
-                        <div className="relative z-10">
-                            <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
-                            <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
-                        </div>
-                        <div className="flex justify-end mt-auto">
-                            <span className={`material-icons text-9xl transition-colors ${feature.iconColor}`}>
-                                {feature.icon}
-                            </span>
-                        </div>
+            {features.map((feature, index) => (
+                <div
+                    key={index}
+                    className={`flex-none w-[350px] h-[480px] ${feature.bg} rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group overflow-hidden`}
+                >
+                    <div className="relative z-10">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
+                        <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
                     </div>
-                ))}
-            </div>
-        </section>
+                    <div className="flex justify-end mt-auto">
+                        <span className={`material-icons text-9xl transition-colors ${feature.iconColor}`}>
+                            {feature.icon}
+                        </span>
+                    </div>
+                </div>
+            ))}
+        </>
     )
 }

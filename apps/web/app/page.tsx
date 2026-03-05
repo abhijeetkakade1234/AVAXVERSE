@@ -6,6 +6,7 @@ import EcosystemSection from "@/components/EcosystemSection"
 import SecuritySection from "@/components/SecuritySection"
 import CTASection from "@/components/CTASection"
 import Footer from "@/components/Footer"
+import HorizontalScroll from "@/components/HorizontalScroll"
 
 export default function Home() {
 
@@ -47,43 +48,54 @@ export default function Home() {
   ]
 
   return (
-    <main className="flex-grow pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full flex flex-col gap-24 relative z-10">
-
+    <main className="relative z-10 font-display bg-background-light">
+      <Navbar />
       <Parallax />
 
-      <Navbar />
-
-      <Hero />
-
-      {/* Core Pillars */}
-      <section className="flex flex-col gap-8 relative">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 bg-white/40 px-6 py-3 rounded-full backdrop-blur-md border border-white/20">
-            <span className="material-icons text-primary text-base">sync</span>
-            <span className="text-sm font-bold text-gray-900 uppercase tracking-wider">Core Pillars</span>
-          </div>
-          <button className="bg-white/40 p-3 rounded-full hover:bg-white/60 transition-colors border border-white/20 backdrop-blur-md">
-            <span className="material-icons text-gray-900">arrow_forward</span>
-          </button>
-        </div>
-        <div className="flex overflow-x-auto gap-8 pb-8 hide-scrollbar snap-x">
-          {pillars.map((pillar, index) => (
-            <PillarCard
-              key={index}
-              {...pillar}
-            />
-          ))}
+      <section id="hero" className="min-h-screen flex items-center px-4 md:px-8">
+        <div className="max-w-7xl mx-auto w-full">
+          <Hero />
         </div>
       </section>
 
-      <EcosystemSection />
+      {/* Core Pillars - Horizontal Pinned Scroll */}
+      <HorizontalScroll id="pillars">
+        <div className="flex flex-col gap-12 min-w-[300px]">
+          <div className="flex items-center gap-2 bg-white/40 px-6 py-3 rounded-full backdrop-blur-md border border-white/20 w-fit">
+            <span className="material-icons text-primary text-base">sync</span>
+            <span className="text-sm font-bold text-gray-900 uppercase tracking-wider">Core Pillars</span>
+          </div>
+          <h2 className="text-5xl md:text-7xl font-bold text-white leading-tight">
+            The foundation of<br />your digital future.
+          </h2>
+        </div>
+        {pillars.map((pillar, index) => (
+          <PillarCard
+            key={index}
+            {...pillar}
+          />
+        ))}
+      </HorizontalScroll>
 
-      <SecuritySection />
+      <HorizontalScroll id="ecosystem">
+        <EcosystemSection />
+      </HorizontalScroll>
 
-      <CTASection />
+      <HorizontalScroll id="security">
+        <SecuritySection />
+      </HorizontalScroll>
 
-      <Footer />
+      <section id="cta" className="min-h-screen flex items-center px-4 md:px-8">
+        <div className="max-w-7xl mx-auto w-full">
+          <CTASection />
+        </div>
+      </section>
 
+      <section className="px-4 md:px-8 py-20">
+        <div className="max-w-7xl mx-auto w-full">
+          <Footer />
+        </div>
+      </section>
     </main>
   )
 }

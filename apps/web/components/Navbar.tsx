@@ -1,22 +1,27 @@
+import { ConnectButton } from '@rainbow-me/rainbowkit'
+import Link from 'next/link'
+
 export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+      <Link href="/" className="flex items-center gap-2">
         <span className="material-icons text-white">layers</span>
         <span className="font-bold text-xl text-white tracking-tight">AVAXVERSE</span>
-      </div>
+      </Link>
 
-      <div className="hidden md:flex items-center bg-white/20 backdrop-blur-md rounded-full px-6 py-2 gap-6 text-sm font-medium text-white shadow-sm border border-white/10">
-        <a className="hover:text-white/80 transition-colors drop-shadow-sm cursor-pointer">Features</a>
-        <a className="hover:text-white/80 transition-colors drop-shadow-sm cursor-pointer">Network</a>
-        <a className="hover:text-white/80 transition-colors drop-shadow-sm cursor-pointer">Explore</a>
-        <a className="hover:text-white/80 transition-colors drop-shadow-sm cursor-pointer">Company</a>
+      <div className="hidden md:flex items-center bg-white/10 backdrop-blur-xl rounded-full px-8 py-3 gap-8 text-sm font-semibold text-white shadow-lg border border-white/20">
+        <Link href="/explorer" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
+        <Link href="/governance" className="hover:text-primary transition-colors cursor-pointer">Governance</Link>
+        <Link href="/jobs" className="hover:text-primary transition-colors cursor-pointer">Jobs</Link>
+        <Link href="/vision" className="hover:text-primary transition-colors cursor-pointer">Vision</Link>
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm hover:bg-white/90 transition-colors shadow-sm">
-          Connect Wallet
-        </button>
+        <ConnectButton
+          showBalance={false}
+          chainStatus="icon"
+          accountStatus="avatar"
+        />
       </div>
     </nav>
   )
