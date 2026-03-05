@@ -17,6 +17,12 @@ export default function EcosystemSection() {
             desc: "Convert between fiat and crypto using major payment providers.",
             bg: "bg-gray-800",
             icon: "currency_exchange"
+        },
+        {
+            title: "Advanced Analytics",
+            desc: "Track your portfolio performance and market trends with real-time on-chain data.",
+            bg: "bg-card-blue/80",
+            icon: "bar_chart"
         }
     ]
 
@@ -41,7 +47,7 @@ export default function EcosystemSection() {
                             <p className="text-white/80 leading-relaxed">{item.desc}</p>
                         </div>
                         <div className="flex justify-end mt-auto relative z-10">
-                            <span className="material-symbols-outlined text-7xl text-white/40 drop-shadow-lg group-hover:scale-110 transition-transform">
+                            <span className="material-icons text-9xl text-white/40 drop-shadow-lg group-hover:scale-110 transition-transform">
                                 {item.icon}
                             </span>
                         </div>

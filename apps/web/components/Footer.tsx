@@ -58,7 +58,7 @@ export default function Footer() {
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
                     Systems Operational
                 </div>
-                <p>© 2024 AVAXVERSE Ecosystem. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} AVAXVERSE Ecosystem. All rights reserved.</p>
                 <div className="flex gap-8">
                     <a className="hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">Terms of Service</a>
                     <a className="hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">Privacy Policy</a>

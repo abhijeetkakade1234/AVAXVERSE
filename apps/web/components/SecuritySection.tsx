@@ -20,6 +20,13 @@ export default function SecuritySection() {
             bg: "bg-[#FFE0E0]",
             icon: "gpp_bad",
             iconColor: "text-red-400/20 group-hover:text-red-400/40"
+        },
+        {
+            title: "Multi-sig Protection",
+            desc: "Secure your high-value assets with sophisticated multi-signature wallet configurations.",
+            bg: "bg-green-100",
+            icon: "verified_user",
+            iconColor: "text-green-600/20 group-hover:text-green-600/40"
         }
     ]
 
@@ -46,7 +53,7 @@ export default function SecuritySection() {
                             <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
                         </div>
                         <div className="flex justify-end mt-auto">
-                            <span className={`material-symbols-outlined text-7xl transition-colors ${feature.iconColor}`}>
+                            <span className={`material-icons text-9xl transition-colors ${feature.iconColor}`}>
                                 {feature.icon}
                             </span>
                         </div>

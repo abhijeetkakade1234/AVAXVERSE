@@ -35,6 +35,14 @@ export default function Home() {
       blendMode: "mix-blend-multiply",
       textColor: "text-gray-900",
       imgPadding: "bg-black/5"
+    },
+    {
+      title: "Community Governance",
+      desc: "Participate in shaping the future of the Avalanche ecosystem through decentralized voting.",
+      bg: "bg-indigo-900/40",
+      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuD3C89vW7GKWQ6O_vI7Y3Gq0f_fT8p6G7d_0Z6W_7f9_9O5p_9H2v_9m_9n_9o_9p_9q_9r_9s_9t_9u_9v_9w_9x_9y_9z",
+      blendMode: "mix-blend-overlay",
+      textColor: "text-white"
     }
   ]
 
