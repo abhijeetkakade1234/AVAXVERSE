@@ -34,3 +34,5 @@ bun-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+/packages/contracts/deployments/localhost.json

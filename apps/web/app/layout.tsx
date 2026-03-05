@@ -1,5 +1,6 @@
 import "./globals.css"
 import { Web3Provider } from "@/components/Web3Provider"
+import OnboardingRedirect from "@/components/OnboardingRedirect"
 
 export const metadata = {
   title: "AVAXVERSE",
@@ -14,11 +15,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </head>
       <body className="font-display">
         <Web3Provider>
+          <OnboardingRedirect />
           {children}
         </Web3Provider>
       </body>
