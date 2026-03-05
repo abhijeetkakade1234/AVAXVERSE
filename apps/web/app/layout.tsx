@@ -1,29 +1,27 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { Web3Provider } from '@/components/Web3Provider'
-import { Navbar } from '@/components/Navbar'
-import './globals.css'
+import "./globals.css"
+import { Web3Provider } from "@/components/Web3Provider"
+import OnboardingRedirect from "@/components/OnboardingRedirect"
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-
-export const metadata: Metadata = {
-  title: 'AVAXVERSE – Avalanche Web3 Super App',
-  description:
-    'A unified on-chain operating layer for identity, freelance work, and governance on Avalanche.',
-  keywords: ['Avalanche', 'Web3', 'DeFi', 'Freelance', 'DAO', 'Identity'],
-  openGraph: {
-    title: 'AVAXVERSE',
-    description: 'Work, earn, and govern on-chain on Avalanche.',
-    type: 'website',
-  },
+export const metadata = {
+  title: "AVAXVERSE",
+  description: "Avalanche Operating Layer",
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="bg-gray-950 text-white antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      </head>
+      <body className="font-display">
         <Web3Provider>
-          <Navbar />
+          <OnboardingRedirect />
           {children}
         </Web3Provider>
       </body>

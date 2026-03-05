@@ -1,0 +1,63 @@
+export default function SecuritySection() {
+    const features = [
+        {
+            title: "Self-custodial means you control your funds.",
+            desc: "We never have access to your private keys or assets.",
+            bg: "bg-white",
+            icon: "lock",
+            iconColor: "text-gray-200 group-hover:text-primary/20"
+        },
+        {
+            title: "Our global Support team is here for you 24/7.",
+            desc: "Get help whenever you need it, wherever you are.",
+            bg: "bg-card-yellow",
+            icon: "support_agent",
+            iconColor: "text-yellow-600/20 group-hover:text-yellow-600/40"
+        },
+        {
+            title: "Scam detection flags malicious transactions.",
+            desc: "Stay safe with real-time alerts before you sign.",
+            bg: "bg-[#FFE0E0]",
+            icon: "gpp_bad",
+            iconColor: "text-red-400/20 group-hover:text-red-400/40"
+        },
+        {
+            title: "Multi-sig Protection",
+            desc: "Secure your high-value assets with sophisticated multi-signature wallet configurations.",
+            bg: "bg-green-100",
+            icon: "verified_user",
+            iconColor: "text-green-600/20 group-hover:text-green-600/40"
+        }
+    ]
+
+    return (
+        <>
+            <div className="flex flex-col gap-12 min-w-[300px]">
+                <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md w-fit">
+                    <span className="material-icons text-white text-base">shield</span>
+                    <span className="text-sm font-bold text-white uppercase tracking-wider">Your security</span>
+                </div>
+                <h2 className="text-5xl md:text-7xl font-bold text-white leading-tight">
+                    Built to be<br />safe & secure.
+                </h2>
+            </div>
+
+            {features.map((feature, index) => (
+                <div
+                    key={index}
+                    className={`flex-none w-[350px] h-[480px] ${feature.bg} rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group overflow-hidden`}
+                >
+                    <div className="relative z-10">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
+                        <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+                    </div>
+                    <div className="flex justify-end mt-auto">
+                        <span className={`material-icons text-9xl transition-colors ${feature.iconColor}`}>
+                            {feature.icon}
+                        </span>
+                    </div>
+                </div>
+            ))}
+        </>
+    )
+}

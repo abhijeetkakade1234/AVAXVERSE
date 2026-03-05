@@ -35,9 +35,10 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
     /**
      * @notice Register a new DID-based profile. One per address.
      * @param name Display name for the user.
+     * @param pfp Profile picture URI.
      * @param metadataURI IPFS/Arweave URI with extended profile data.
      */
-    function register(string calldata name, string calldata metadataURI) external override {
+    function register(string calldata name, string calldata pfp, string calldata metadataURI) external override {
         require(!_profiles[msg.sender].exists, 'IdentityRegistry: already registered');
         require(bytes(name).length > 0, 'IdentityRegistry: name required');
 
@@ -46,6 +47,7 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
         _profiles[msg.sender] = Profile({
             did: did,
             name: name,
+            pfp: pfp,
             metadataURI: metadataURI,
             verificationLevel: 0,
             reputationScore: 0,
@@ -57,11 +59,29 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
     }
 
     /**
+     * @notice Update an existing profile.
+     */
+    function updateProfile(
+        string calldata name,
+        string calldata pfp,
+        string calldata metadataURI
+    ) external override onlyRegistered(msg.sender) {
+        require(bytes(name).length > 0, 'IdentityRegistry: name required');
+        
+        Profile storage profile = _profiles[msg.sender];
+        profile.name = name;
+        profile.pfp = pfp;
+        profile.metadataURI = metadataURI;
+
+        emit ProfileUpdated(msg.sender, name, pfp, metadataURI);
+    }
+
+    /**
      * @notice Update the IPFS/Arweave metadata URI of an existing profile.
      */
     function updateMetadata(string calldata metadataURI) external override onlyRegistered(msg.sender) {
         _profiles[msg.sender].metadataURI = metadataURI;
-        emit ProfileUpdated(msg.sender, metadataURI);
+        emit ProfileUpdated(msg.sender, _profiles[msg.sender].name, _profiles[msg.sender].pfp, metadataURI);
     }
 
     /**
