@@ -1,6 +1,6 @@
 'use client'
 
-import React, { use } from 'react'
+import React, { use, useEffect } from 'react'
 import {
     Clock,
     Wallet,
@@ -9,27 +9,66 @@ import {
     FileText,
     MessageSquare,
     ExternalLink,
-    ChevronRight
+    ChevronRight,
 } from 'lucide-react'
 import Link from 'next/link'
+import {
+    useAccount,
+    useReadContract,
+    useWriteContract,
+    useWaitForTransactionReceipt,
+} from 'wagmi'
+import { formatEther } from 'viem'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
+import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, type EscrowState } from '@/lib/abis'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
+    const { address: connectedAddress } = useAccount()
 
-    // In a real app, we'd fetch this from the contract using the jobId (id)
-    // For now, we'll use a premium mock state
-    const job = {
-        id: id,
-        title: "Smart Contract Security Audit - AVAX Staking",
-        budget: "150.00",
-        client: "0x742d35Cc6634C0532925a3b844Bc454e4438f44d",
-        operator: "0x8920112230B02d51744b59d5AD26D97fC9B23E3E",
-        status: "FUNDED", // FUNDED, SUBMITTED, APPROVED, DISPUTED
-        createdAt: "2024-03-01",
-        description: "Comprehensive security audit for the new AVAX liquid staking protocol subnets. Requirements include fuzzing, symbolic execution, and manual review of the reward distribution logic.",
+    // 1. Fetch Job Info from Factory
+    const { data: job, isLoading: isJobLoading } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'getJob',
+        args: [BigInt(id)],
+    })
+
+    // 2. Fetch Escrow State
+    const { data: state, refetch: refetchState } = useReadContract({
+        address: job?.escrow as `0x${string}`,
+        abi: ESCROW_ABI,
+        functionName: 'getState',
+        query: { enabled: !!job?.escrow },
+    })
+
+    // 3. Contract Actions
+    const { writeContract, data: hash, isPending } = useWriteContract()
+    const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+    // Refresh state after success
+    useEffect(() => {
+        if (isSuccess) refetchState()
+    }, [isSuccess, refetchState])
+
+    if (isJobLoading) return <div className="min-h-screen pt-40 text-center text-white/20 font-bold uppercase tracking-widest animate-pulse">Scanning Neural Links...</div>
+    if (!job) return <div className="min-h-screen pt-40 text-center text-red-500 font-bold">MISSION ID NOT FOUND</div>
+
+    const stateName: EscrowState = state !== undefined ? ESCROW_STATES[state] : 'FUNDED'
+    const isClient = connectedAddress?.toLowerCase() === job.client.toLowerCase()
+    const isOperator = connectedAddress?.toLowerCase() === job.freelancer.toLowerCase()
+
+    const handleAction = (functionName: 'submitWork' | 'approveWork' | 'raiseDispute' | 'refund', args?: readonly unknown[]) => {
+        writeContract({
+            address: job.escrow as `0x${string}`,
+            abi: ESCROW_ABI,
+            functionName,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            args: args as any,
+        })
     }
 
     return (
@@ -47,10 +86,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         <div className="flex-1 space-y-8">
                             <div className="space-y-4">
                                 <div className="flex flex-wrap items-center gap-3">
-                                    <div className="badge badge-red flex items-center gap-1.5 px-3 py-1 font-black text-[10px]">
-                                        <Wallet size={12} /> {job.status}
+                                    <div className={`badge ${stateName === 'DISPUTED' ? 'badge-red' : stateName === 'APPROVED' || stateName === 'RELEASED' ? 'badge-green' : 'badge-red'} flex items-center gap-1.5 px-3 py-1 font-black text-[10px]`}>
+                                        <Wallet size={12} /> {stateName}
                                     </div>
-                                    <span className="text-white/20 text-xs font-mono">Mission ID: {job.id}</span>
+                                    <span className="text-white/20 text-xs font-mono">Mission ID: {id}</span>
                                 </div>
                                 <h1 className="text-4xl md:text-6xl font-black leading-tight">
                                     {job.title}
@@ -62,12 +101,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                     <FileText size={20} className="text-red-500" /> Mission Brief
                                 </h2>
                                 <p className="text-white/50 leading-relaxed text-lg">
-                                    {job.description}
+                                    Secure escrow engagement for protocol operations. This mission is managed via the AVAXVERSE infrastructure.
                                 </p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-white/5">
                                     <AddrLink label="Client / Deployer" addr={job.client} />
-                                    <AddrLink label="Operator / Agent" addr={job.operator} />
+                                    <AddrLink label="Operator / Agent" addr={job.freelancer} />
                                 </div>
                             </div>
 
@@ -77,10 +116,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                     <Clock size={20} className="text-red-500" /> Protocol History
                                 </h2>
                                 <div className="space-y-0.5">
-                                    <TimelineItem date="Mar 01, 2024" title="Escrow Initialized" desc="Contract deployed and funded with 150 AVAX." completed />
-                                    <TimelineItem date="Mar 02, 2024" title="Operator Assigned" desc="Mission accepted by audited security agent." completed />
-                                    <TimelineItem date="Pending" title="Submission" desc="Awaiting work delivery and CID broadcast." />
-                                    <TimelineItem date="Pending" title="Release" desc="Client verification and funds liberation." />
+                                    <TimelineItem date={new Date(Number(job.createdAt) * 1000).toLocaleDateString()} title="Escrow Initialized" desc={`Contract deployed and funded with ${formatEther(job.budget)} AVAX.`} completed />
+                                    <TimelineItem date="Assigned" title="Operator Assigned" desc="Mission accepted by audited security agent." completed />
+                                    <TimelineItem date={stateName === 'SUBMITTED' ? 'Active' : 'Pending'} title="Submission" desc="Freelancer work delivery status." completed={state !== undefined && state >= 1} />
+                                    <TimelineItem date={stateName === 'RELEASED' ? 'Finalized' : 'Pending'} title="Release" desc="Verification and funds liberation." completed={state !== undefined && state >= 4} />
                                 </div>
                             </div>
                         </div>
@@ -93,22 +132,58 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 </div>
 
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">Secure Escrow</div>
-                                <div className="text-5xl font-black text-red-500 mb-6">{job.budget} <span className="text-xl">AVAX</span></div>
+                                <div className="text-5xl font-black text-red-500 mb-6">{formatEther(job.budget)} <span className="text-xl">AVAX</span></div>
 
                                 <div className="space-y-3 mb-8">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-white/40">Network Fee</span>
-                                        <span className="text-white/80">0.45 AVAX</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs">
                                         <span className="text-white/40">Status</span>
-                                        <span className="text-green-500 font-bold">Locked in Escrow</span>
+                                        <span className={`${stateName === 'RELEASED' ? 'text-green-500' : 'text-red-500'} font-bold`}>
+                                            {stateName === 'RELEASED' ? 'Funds Distributed' : 'Locked in Escrow'}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <button className="btn-primary w-full py-4 justify-center text-lg mb-4">
-                                    Submit Intel <ChevronRight size={20} className="ml-2" />
-                                </button>
+                                {isOperator && state === 0 && (
+                                    <button
+                                        onClick={() => handleAction('submitWork', ['ipfs://work-intel'])}
+                                        disabled={isPending || isConfirming}
+                                        className="btn-primary w-full py-4 justify-center text-lg mb-4"
+                                    >
+                                        {isPending || isConfirming ? 'Processing...' : 'Submit Intel'} <ChevronRight size={20} className="ml-2" />
+                                    </button>
+                                )}
+
+                                {isClient && state === 1 && (
+                                    <button
+                                        onClick={() => handleAction('approveWork')}
+                                        disabled={isPending || isConfirming}
+                                        className="btn-primary w-full py-4 justify-center text-lg mb-4"
+                                    >
+                                        {isPending || isConfirming ? 'Processing...' : 'Approve & Release'} <ChevronRight size={20} className="ml-2" />
+                                    </button>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    {(isClient || isOperator) && state === 1 && (
+                                        <button
+                                            onClick={() => handleAction('raiseDispute')}
+                                            disabled={isPending || isConfirming}
+                                            className="btn-secondary py-3 justify-center text-xs border-red-500/20 text-red-500 hover:bg-red-500/10"
+                                        >
+                                            Raise Dispute
+                                        </button>
+                                    )}
+                                    {isClient && state === 0 && (
+                                        <button
+                                            onClick={() => handleAction('refund')}
+                                            disabled={isPending || isConfirming}
+                                            className="btn-secondary py-3 justify-center text-xs border-white/10"
+                                        >
+                                            Request Refund
+                                        </button>
+                                    )}
+                                </div>
+
                                 <button className="btn-secondary w-full py-4 justify-center text-sm border-white/10">
                                     <MessageSquare size={18} className="mr-2" /> Open Comms
                                 </button>
@@ -139,6 +214,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </main>
     )
 }
+
 
 function AddrLink({ label, addr }: { label: string, addr: string }) {
     return (

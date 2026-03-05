@@ -28,6 +28,7 @@ import { Section } from '@/components/ui'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, type EscrowState } from '@/lib/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import Link from 'next/link'
 
 // ─── Component ────────────────────────────────────────────────────────
 function StateBadge({ state }: { state: EscrowState }) {
@@ -193,9 +194,11 @@ function JobCard({ jobId }: { jobId: bigint }) {
             </div>
 
             <div className="mt-6">
-                <button className="btn-secondary w-full py-2.5 text-xs text-red-500/80 hover:text-white justify-center border-red-500/20">
-                    View Intel <ArrowRightLeft size={14} className="ml-2" />
-                </button>
+                <Link href={`/jobs/${jobId}`}>
+                    <button className="btn-secondary w-full py-2.5 text-xs text-red-500/80 hover:text-white justify-center border-red-500/20 card-hover">
+                        View Intel <ArrowRightLeft size={14} className="ml-2" />
+                    </button>
+                </Link>
             </div>
         </div>
     )

@@ -41,7 +41,7 @@ async function deployContracts() {
 describe('IdentityRegistry', () => {
   it('allows a user to register a profile', async () => {
     const { alice, registry } = await deployContracts()
-    await registry.connect(alice).register('Alice', 'ipfs://alice-profile')
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice-profile')
 
     const profile = await registry.getProfile(alice.address)
     expect(profile.name).to.equal('Alice')
@@ -51,15 +51,15 @@ describe('IdentityRegistry', () => {
 
   it('prevents double registration', async () => {
     const { alice, registry } = await deployContracts()
-    await registry.connect(alice).register('Alice', 'ipfs://alice-profile')
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice-profile')
     await expect(
-      registry.connect(alice).register('Alice2', 'ipfs://alice-profile-2'),
+      registry.connect(alice).register('Alice2', 'ipfs://pfp', 'ipfs://alice-profile-2'),
     ).to.be.revertedWith('IdentityRegistry: already registered')
   })
 
   it('allows updating metadata URI', async () => {
     const { alice, registry } = await deployContracts()
-    await registry.connect(alice).register('Alice', 'ipfs://old')
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://old')
     await registry.connect(alice).updateMetadata('ipfs://new')
 
     const profile = await registry.getProfile(alice.address)
@@ -68,7 +68,7 @@ describe('IdentityRegistry', () => {
 
   it('only authorized updaters can increment reputation', async () => {
     const { alice, bob, registry } = await deployContracts()
-    await registry.connect(alice).register('Alice', 'ipfs://alice')
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice')
 
     await expect(
       registry.connect(bob).incrementReputation(alice.address, 10),
@@ -107,8 +107,8 @@ describe('EscrowFactory → Escrow', () => {
   async function setupWithProfiles() {
     const ctx = await deployContracts()
     const { alice, bob, registry } = ctx
-    await registry.connect(alice).register('Alice', 'ipfs://alice')
-    await registry.connect(bob).register('Bob', 'ipfs://bob')
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice')
+    await registry.connect(bob).register('Bob', 'ipfs://pfp', 'ipfs://bob')
     return ctx
   }
 
