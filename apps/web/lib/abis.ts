@@ -8,6 +8,18 @@ export const IDENTITY_REGISTRY_ABI = [
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'name', type: 'string' },
+      { name: 'pfp', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [],
+  },
+  {
+    name: 'updateProfile',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'pfp', type: 'string' },
       { name: 'metadataURI', type: 'string' },
     ],
     outputs: [],
@@ -30,6 +42,7 @@ export const IDENTITY_REGISTRY_ABI = [
         components: [
           { name: 'did', type: 'string' },
           { name: 'name', type: 'string' },
+          { name: 'pfp', type: 'string' },
           { name: 'metadataURI', type: 'string' },
           { name: 'verificationLevel', type: 'uint256' },
           { name: 'reputationScore', type: 'uint256' },

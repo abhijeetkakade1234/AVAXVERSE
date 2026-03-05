@@ -30,6 +30,7 @@ export default function PillarCard({
 
       <div className="flex justify-end mt-auto">
         <div className={`p-4 ${imgPadding} rounded-full backdrop-blur-sm border border-white/30 group-hover:scale-110 transition-transform`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt={title}
             className={`w-20 h-20 object-cover rounded-full ${blendMode} opacity-90`}

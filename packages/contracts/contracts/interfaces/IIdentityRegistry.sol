@@ -9,7 +9,8 @@ interface IIdentityRegistry {
     struct Profile {
         string did;
         string name;
-        string metadataURI; // IPFS/Arweave URI for off-chain profile data
+        string pfp; // Profile picture URI
+        string metadataURI; // IPFS/Arweave URI for off-chain profile data (bio, socials, etc.)
         uint256 verificationLevel; // 0=unverified, 1=social, 2=KYC
         uint256 reputationScore;
         uint256 registeredAt;
@@ -17,10 +18,11 @@ interface IIdentityRegistry {
     }
 
     event ProfileRegistered(address indexed user, string did, uint256 timestamp);
-    event ProfileUpdated(address indexed user, string metadataURI);
+    event ProfileUpdated(address indexed user, string name, string pfp, string metadataURI);
     event ReputationUpdated(address indexed user, uint256 newScore);
 
-    function register(string calldata name, string calldata metadataURI) external;
+    function register(string calldata name, string calldata pfp, string calldata metadataURI) external;
+    function updateProfile(string calldata name, string calldata pfp, string calldata metadataURI) external;
     function updateMetadata(string calldata metadataURI) external;
     function getProfile(address user) external view returns (Profile memory);
     function hasProfile(address user) external view returns (bool);
