@@ -1,6 +1,5 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import {
   IdentityRegistry,
   ReputationToken,
@@ -8,11 +7,8 @@ import {
   Escrow,
 } from '../typechain-types'
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
-
 async function deployContracts() {
-  const [owner, alice, bob, carol, mediator, feeWallet] =
-    await ethers.getSigners()
+  const [owner, alice, bob, carol, mediator, feeWallet] = await ethers.getSigners()
 
   const IdentityRegistry = await ethers.getContractFactory('IdentityRegistry')
   const registry = (await IdentityRegistry.deploy()) as unknown as IdentityRegistry
@@ -28,15 +24,11 @@ async function deployContracts() {
     mediator.address,
   )) as unknown as EscrowFactory
 
-  // Authorize the factory as a minter on ReputationToken
   await repToken.setMinter(await factory.getAddress(), true)
-  // Authorize the factory on IdentityRegistry
   await registry.setAuthorizedUpdater(await factory.getAddress(), true)
 
   return { owner, alice, bob, carol, mediator, feeWallet, registry, repToken, factory }
 }
-
-// ─── IdentityRegistry Tests ──────────────────────────────────────────────────
 
 describe('IdentityRegistry', () => {
   it('allows a user to register a profile', async () => {
@@ -76,8 +68,6 @@ describe('IdentityRegistry', () => {
   })
 })
 
-// ─── ReputationToken Tests ────────────────────────────────────────────────────
-
 describe('ReputationToken', () => {
   it('owner can mint to a user', async () => {
     const { alice, repToken } = await deployContracts()
@@ -85,7 +75,7 @@ describe('ReputationToken', () => {
     expect(await repToken.balanceOf(alice.address)).to.equal(1)
   })
 
-  it('tokens are soulbound — transfers revert', async () => {
+  it('tokens are soulbound - transfers revert', async () => {
     const { alice, bob, repToken } = await deployContracts()
     await repToken.mintAchievement(alice.address, 'ipfs://achievement-1')
 
@@ -101,59 +91,106 @@ describe('ReputationToken', () => {
   })
 })
 
-// ─── Escrow via EscrowFactory Tests ──────────────────────────────────────────
-
-describe('EscrowFactory → Escrow', () => {
+describe('EscrowFactory -> Escrow', () => {
   async function setupWithProfiles() {
     const ctx = await deployContracts()
-    const { alice, bob, registry } = ctx
+    const { alice, bob, carol, registry } = ctx
     await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice')
     await registry.connect(bob).register('Bob', 'ipfs://pfp', 'ipfs://bob')
+    await registry.connect(carol).register('Carol', 'ipfs://pfp', 'ipfs://carol')
     return ctx
   }
 
-  it('creates a job escrow and tracks it', async () => {
+  async function createSelectAndFund(factory: EscrowFactory, aliceAddr: string, bobAddr: string, budget: bigint) {
+    const commitment = await factory.clientCommitmentWei()
+    const stake = await factory.applicationStakeWei()
+    await factory.connect(await ethers.getSigner(aliceAddr)).createJob('Build smart contracts', budget, 'ipfs://job-meta', { value: commitment })
+    const jobId = 0n
+
+    const requiredStake = await factory.requiredStakeFor(bobAddr)
+    await factory.connect(await ethers.getSigner(bobAddr)).applyToJob(jobId, 'ipfs://proposal-bob', { value: requiredStake })
+    await factory.connect(await ethers.getSigner(aliceAddr)).selectOperator(jobId, bobAddr)
+    await factory.connect(await ethers.getSigner(bobAddr)).acceptAssignment(jobId)
+    await factory.connect(await ethers.getSigner(aliceAddr)).fundEscrow(jobId, { value: budget })
+
+    const job = await factory.getJob(jobId)
+    return { jobId, escrowAddr: job.escrow }
+  }
+
+  it('creates open job, accepts applications, and tracks selection', async () => {
+    const { alice, bob, carol, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+    const commitment = await factory.clientCommitmentWei()
+
+    await factory.connect(alice).createJob('Build smart contracts', budget, 'ipfs://job-meta', { value: commitment })
+    const stakeBob = await factory.requiredStakeFor(bob.address)
+    const stakeCarol = await factory.requiredStakeFor(carol.address)
+    await factory.connect(bob).applyToJob(0n, 'ipfs://proposal-bob', { value: stakeBob })
+    await factory.connect(carol).applyToJob(0n, 'ipfs://proposal-carol', { value: stakeCarol })
+
+    const applicants = await factory.getApplicants(0n)
+    expect(applicants.length).to.equal(2)
+
+    await factory.connect(alice).selectOperator(0n, bob.address)
+    const job = await factory.getJob(0n)
+    expect(job.freelancer).to.equal(bob.address)
+    expect(job.status).to.equal(1) // SELECTED
+  })
+
+  it('fails to fund before operator accepts', async () => {
+    const { alice, bob, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+    const commitment = await factory.clientCommitmentWei()
+
+    await factory.connect(alice).createJob('Fail fund job', budget, 'ipfs://meta', { value: commitment })
+    const requiredStake = await factory.requiredStakeFor(bob.address)
+    await factory.connect(bob).applyToJob(0n, 'ipfs://proposal-bob', { value: requiredStake })
+    await factory.connect(alice).selectOperator(0n, bob.address)
+    
+    // Status is SELECTED (1), but fundEscrow requires ACCEPTED (2)
+    await expect(
+        factory.connect(alice).fundEscrow(0n, { value: budget })
+    ).to.be.revertedWith('EscrowFactory: job not accepted')
+  })
+
+  it('full happy path: create -> apply -> select -> accept -> fund -> submit -> approve', async () => {
     const { alice, bob, factory } = await setupWithProfiles()
     const budget = ethers.parseEther('1')
 
-    const tx = await factory
-      .connect(alice)
-      .createJob(bob.address, 'Build smart contracts', { value: budget })
-
-    const receipt = await tx.wait()
-    const event = receipt?.logs.find(
-      (l) => factory.interface.parseLog(l as any)?.name === 'JobCreated',
-    )
-    expect(event).to.not.be.undefined
-    expect(await factory.totalJobs()).to.equal(1)
-  })
-
-  it('full happy path: fund → submit → approve → release', async () => {
-    const { alice, bob, factory, feeWallet } = await setupWithProfiles()
-    const budget = ethers.parseEther('1')
-
-    const tx = await factory
-      .connect(alice)
-      .createJob(bob.address, 'Full flow job', { value: budget })
-
-    const receipt = await tx.wait()
-    const jobCreatedLog = receipt!.logs
-      .map((l) => {
-        try { return factory.interface.parseLog(l as any) } catch { return null }
-      })
-      .find((e) => e?.name === 'JobCreated')!
-
-    const escrowAddr = jobCreatedLog.args.escrow as string
+    const { escrowAddr } = await createSelectAndFund(factory, alice.address, bob.address, budget)
     const escrow = (await ethers.getContractAt('Escrow', escrowAddr)) as unknown as Escrow
 
-    // Freelancer submits work
+    const jobStatus = (await factory.getJob(0n)).status
+    expect(jobStatus).to.equal(3) // FUNDED (was 2)
+
     await escrow.connect(bob).submitWork('ipfs://deliverable')
     expect(await escrow.getState()).to.equal(1) // SUBMITTED
 
-    // Client approves
     const bobBefore = await ethers.provider.getBalance(bob.address)
     await escrow.connect(alice).approveWork()
 
+    expect(await escrow.getState()).to.equal(4) // RELEASED
+    const bobAfter = await ethers.provider.getBalance(bob.address)
+    expect(bobAfter).to.be.gt(bobBefore)
+  })
+
+  it('auto-approve work after 7-day timeout', async () => {
+    const { alice, bob, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+
+    const { escrowAddr } = await createSelectAndFund(factory, alice.address, bob.address, budget)
+    const escrow = (await ethers.getContractAt('Escrow', escrowAddr)) as unknown as Escrow
+
+    await escrow.connect(bob).submitWork('ipfs://deliverable')
+    
+    // Fast forward 7 days + 1 second
+    await ethers.provider.send('evm_increaseTime', [7 * 24 * 60 * 60 + 1])
+    await ethers.provider.send('evm_mine', [])
+
+    const bobBefore = await ethers.provider.getBalance(bob.address)
+    // Anyone can call autoApprove
+    await escrow.autoApprove()
+    
     expect(await escrow.getState()).to.equal(4) // RELEASED
     const bobAfter = await ethers.provider.getBalance(bob.address)
     expect(bobAfter).to.be.gt(bobBefore)
@@ -163,29 +200,74 @@ describe('EscrowFactory → Escrow', () => {
     const { alice, bob, mediator, factory } = await setupWithProfiles()
     const budget = ethers.parseEther('1')
 
-    const tx = await factory
-      .connect(alice)
-      .createJob(bob.address, 'Disputed job', { value: budget })
-
-    const receipt = await tx.wait()
-    const jobCreatedLog = receipt!.logs
-      .map((l) => {
-        try { return factory.interface.parseLog(l as any) } catch { return null }
-      })
-      .find((e) => e?.name === 'JobCreated')!
-
-    const escrowAddr = jobCreatedLog.args.escrow as string
+    const { escrowAddr } = await createSelectAndFund(factory, alice.address, bob.address, budget)
     const escrow = (await ethers.getContractAt('Escrow', escrowAddr)) as unknown as Escrow
 
     await escrow.connect(bob).submitWork('ipfs://deliverable')
-    await escrow.connect(alice).raiseDispute()
+    await escrow.connect(alice).raiseDispute('Work quality does not match scope', 'ipfs://client-evidence')
     expect(await escrow.getState()).to.equal(3) // DISPUTED
 
+    // Verify evidence is stored
+    expect(await escrow.disputeEvidenceURI()).to.equal('ipfs://client-evidence')
+
+    // Mediator tries to resolve immediately -> should fail
+    await expect(
+        escrow.connect(mediator).resolveDispute(bob.address, 'ipfs://resolution-reason')
+    ).to.be.revertedWith('Escrow: response window active')
+
+    // Other party submits counter evidence
+    await escrow.connect(bob).submitCounterEvidence('ipfs://freelancer-evidence')
+    expect(await escrow.counterEvidenceURI()).to.equal('ipfs://freelancer-evidence')
+
+    // Fast forward 3 days + 1 second
+    await ethers.provider.send('evm_increaseTime', [3 * 24 * 60 * 60 + 1])
+    await ethers.provider.send('evm_mine', [])
+
     const bobBefore = await ethers.provider.getBalance(bob.address)
-    await escrow.connect(mediator).resolveDispute(bob.address)
+    await escrow.connect(mediator).resolveDispute(bob.address, 'ipfs://resolution-reason')
     expect(await escrow.getState()).to.equal(4) // RELEASED
+    expect(await escrow.resolutionReasonHash()).to.equal('ipfs://resolution-reason')
 
     const bobAfter = await ethers.provider.getBalance(bob.address)
     expect(bobAfter).to.be.gt(bobBefore)
+  })
+
+  it('timeout slash selected operator if they never accept', async () => {
+    const { alice, bob, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+    const commitment = await factory.clientCommitmentWei()
+
+    await factory.connect(alice).createJob('Timeout job', budget, 'ipfs://meta', { value: commitment })
+    const requiredStake = await factory.requiredStakeFor(bob.address)
+    await factory.connect(bob).applyToJob(0n, 'ipfs://proposal-bob', { value: requiredStake })
+    await factory.connect(alice).selectOperator(0n, bob.address)
+
+    await ethers.provider.send('evm_increaseTime', [24 * 60 * 60 + 5])
+    await ethers.provider.send('evm_mine', [])
+
+    await factory.connect(alice).timeoutReopenAndSlashSelected(0n)
+    const job = await factory.getJob(0n)
+    expect(job.status).to.equal(0) // OPEN
+    expect(job.freelancer).to.equal('0x0000000000000000000000000000000000000000')
+  })
+
+  it('timeout cancel by operator if client never funds after acceptance', async () => {
+    const { alice, bob, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+    const commitment = await factory.clientCommitmentWei()
+
+    await factory.connect(alice).createJob('Funding timeout job', budget, 'ipfs://meta', { value: commitment })
+    const requiredStake = await factory.requiredStakeFor(bob.address)
+    await factory.connect(bob).applyToJob(0n, 'ipfs://proposal-bob', { value: requiredStake })
+    await factory.connect(alice).selectOperator(0n, bob.address)
+    await factory.connect(bob).acceptAssignment(0n)
+
+    await ethers.provider.send('evm_increaseTime', [24 * 60 * 60 + 5])
+    await ethers.provider.send('evm_mine', [])
+
+    await factory.connect(bob).timeoutCancelByOperator(0n)
+    const job = await factory.getJob(0n)
+    console.log("Job status after operator cancel:", job.status.toString());
+    expect(job.status).to.equal(5) // CANCELLED (was 4)
   })
 })

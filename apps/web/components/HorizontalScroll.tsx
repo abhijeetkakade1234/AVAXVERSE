@@ -63,7 +63,7 @@ export default function HorizontalScroll({ children, id }: HorizontalScrollProps
         <section
             ref={targetRef}
             id={id}
-            className="relative h-[600vh] bg-transparent z-20" // Higher z-index for pinning
+            className="relative h-[500vh] bg-transparent z-20"
         >
             <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
                 <motion.div

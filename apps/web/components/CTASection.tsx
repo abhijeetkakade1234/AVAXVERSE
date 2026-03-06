@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function CTASection() {
     return (
         <section className="text-center py-32 glass-card rounded-[4rem] p-12 mt-12 border border-white/20 relative overflow-hidden group">
@@ -12,10 +14,12 @@ export default function CTASection() {
                         Enter AVAXVERSE.
                     </span>
                 </h2>
-                <button className="bg-white text-primary px-12 py-6 rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)] inline-flex items-center gap-3">
-                    <span className="material-icons">rocket_launch</span>
-                    Launch App
-                </button>
+                <Link href="/jobs">
+                    <button className="bg-white text-primary px-12 py-6 rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)] inline-flex items-center gap-3">
+                        <span className="material-icons">rocket_launch</span>
+                        Launch App
+                    </button>
+                </Link>
             </div>
         </section>
     )

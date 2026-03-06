@@ -10,6 +10,7 @@ import AchievementsTab from './AchievementsTab'
 import MissionsTab from './MissionsTab'
 import SettingsTab from './SettingsTab'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import Footer from '@/components/Footer'
 
 interface ProfileData {
     exists: boolean;
@@ -268,6 +269,11 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
                         )}
                     </main>
                 </div>
+                <section className="px-4 md:px-8 py-20 mt-auto">
+                    <div className="max-w-7xl mx-auto w-full">
+                        <Footer />
+                    </div>
+                </section>
             </div>
         </>
     )

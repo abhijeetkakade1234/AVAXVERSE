@@ -101,9 +101,11 @@ export default function GovernancePage() {
                 </Section>
             </div>
 
-            <div className="px-4 md:px-8 pb-12">
-                <Footer />
-            </div>
+            <section className="px-4 md:px-8 py-20">
+                <div className="max-w-7xl mx-auto w-full">
+                    <Footer />
+                </div>
+            </section>
         </main>
     )
 }
