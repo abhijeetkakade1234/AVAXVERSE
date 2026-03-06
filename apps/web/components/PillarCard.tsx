@@ -2,7 +2,8 @@ type PillarCardProps = {
   title: string
   desc: string
   bg: string
-  img: string
+  img?: string // Optional now
+  icon?: string // Adding back but for the bubble
   blendMode?: string
   textColor?: string
   imgPadding?: string
@@ -13,29 +14,36 @@ export default function PillarCard({
   desc,
   bg,
   img,
-  blendMode = "mix-blend-overlay",
-  textColor = "text-gray-900 dark:text-white",
-  imgPadding = "bg-white/20"
+  icon,
+  blendMode = "mix-blend-normal",
+  textColor = "text-white",
+  imgPadding = "bg-white/10"
 }: PillarCardProps) {
   return (
-    <div className={`flex-none w-[350px] h-[480px] ${bg} rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/20 shadow-xl`}>
+    <div className={`snap-start flex-none w-[320px] h-[450px] ${bg} rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/20 shadow-xl`}>
       <div className="relative z-10">
-        <h3 className={`text-2xl font-bold ${textColor.split(' ')[0]} dark:text-white mb-4`}>
+        <h3 className={`text-3xl font-bold ${textColor} mb-4`}>
           {title}
         </h3>
-        <p className={`${textColor.includes('gray-700') ? 'text-gray-700' : 'text-gray-300'} dark:text-gray-300 leading-relaxed`}>
+        <p className={`${textColor} opacity-80 leading-relaxed`}>
           {desc}
         </p>
       </div>
 
       <div className="flex justify-end mt-auto">
-        <div className={`p-4 ${imgPadding} rounded-full backdrop-blur-sm border border-white/30 group-hover:scale-110 transition-transform`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt={title}
-            className={`w-20 h-20 object-cover rounded-full ${blendMode} opacity-90`}
-            src={img}
-          />
+        <div className={`w-28 h-28 ${imgPadding} rounded-full backdrop-blur-md border border-white/30 group-hover:scale-110 transition-all duration-500 shadow-lg flex items-center justify-center`}>
+          {img ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              alt={title}
+              className={`w-16 h-16 object-contain ${blendMode}`}
+              src={img}
+            />
+          ) : (
+            <span className={`material-icons text-white text-6xl drop-shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
+              {icon || 'layers'}
+            </span>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { formatEther } from 'viem';
 import { ESCROW_STATES } from '@/lib/abis';
+import Link from 'next/link';
 
 interface JobData {
     id: number;
@@ -61,9 +62,11 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                                             <div className="text-sm font-bold text-gray-900 dark:text-white">{formatEther(job.budget)} AVAX</div>
                                             <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Rewards</div>
                                         </div>
-                                        <button className="px-6 py-2.5 bg-[#8B82F6] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8B82F6]/25 hover:scale-105 active:scale-95 transition-transform">
-                                            Mission Control
-                                        </button>
+                                        <Link href={`/jobs/${job.id}`}>
+                                            <button className="px-6 py-2.5 bg-[#8B82F6] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8B82F6]/25 hover:scale-105 active:scale-95 transition-transform">
+                                                Mission Control
+                                            </button>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -97,7 +100,9 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                                 <div className="text-right">
                                     <div className="text-sm font-bold dark:text-gray-300 text-gray-700">{formatEther(job.budget)} AVAX</div>
                                 </div>
-                                <span className="material-symbols-outlined text-gray-400 group-hover:text-[#8B82F6] transition-colors cursor-pointer">arrow_forward</span>
+                                <Link href={`/jobs/${job.id}`}>
+                                    <span className="material-symbols-outlined text-gray-400 group-hover:text-[#8B82F6] transition-colors cursor-pointer">arrow_forward</span>
+                                </Link>
                             </div>
                         </div>
                     ))}

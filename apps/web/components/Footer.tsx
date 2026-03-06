@@ -1,12 +1,17 @@
+import Link from 'next/link'
+import Logo from './Logo'
+
 export default function Footer() {
     return (
         <footer className="bg-card-white/90 dark:bg-card-dark-1/90 backdrop-blur-xl rounded-[3rem] p-10 md:p-16 shadow-2xl border border-white/20 dark:border-white/5">
             <div className="flex flex-col lg:flex-row justify-between gap-16 border-b border-gray-200 dark:border-gray-700/50 pb-16 mb-12">
                 <div className="flex-1 max-w-lg">
-                    <div className="flex items-center gap-2 mb-8">
-                        <span className="material-icons text-primary text-3xl">layers</span>
-                        <span className="font-bold text-2xl tracking-tighter text-gray-900 dark:text-white">AVAXVERSE</span>
-                    </div>
+                    <Logo
+                        className="mb-8"
+                        iconSize="text-3xl"
+                        textSize="text-2xl"
+                        color="text-gray-900 dark:text-white"
+                    />
                     <h3 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Stay updated</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
                         Sign up for our newsletter and join the growing AVAXVERSE community.
@@ -15,6 +20,7 @@ export default function Footer() {
                         <input
                             type="email"
                             placeholder="Enter your email"
+                            suppressHydrationWarning
                             className="flex-1 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-white/10 rounded-full px-8 py-4 text-base focus:ring-2 focus:ring-primary outline-none text-gray-900 dark:text-white shadow-inner"
                         />
                         <button className="bg-primary text-white px-10 py-4 rounded-full text-base font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
@@ -36,8 +42,8 @@ export default function Footer() {
                     <div className="flex flex-col gap-6">
                         <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Resources</h4>
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
-                            <a className="hover:text-primary transition-colors cursor-pointer">Explore</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Learn</a>
+                            <Link href="/jobs" className="hover:text-primary transition-colors cursor-pointer">Marketplace</Link>
+                            <Link href="/jobs/how-it-works" className="hover:text-primary transition-colors cursor-pointer">How it Works</Link>
                             <a className="hover:text-primary transition-colors cursor-pointer">Blog</a>
                             <a className="hover:text-primary transition-colors cursor-pointer">Docs</a>
                         </div>
@@ -58,7 +64,7 @@ export default function Footer() {
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
                     Systems Operational
                 </div>
-                <p>© {new Date().getFullYear()} AVAXVERSE Ecosystem. All rights reserved.</p>
+                <p suppressHydrationWarning>© {new Date().getFullYear()} AVAXVERSE Ecosystem. All rights reserved.</p>
                 <div className="flex gap-8">
                     <a className="hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">Terms of Service</a>
                     <a className="hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">Privacy Policy</a>

@@ -5,6 +5,9 @@ interface ProfileTabProps {
     trustScore: string;
     globalRank: number | null;
     reputationScore: number;
+    currentRankName: string;
+    nextRankName: string;
+    progressToNext: number;
 }
 
 export default function ProfileTab({
@@ -13,7 +16,10 @@ export default function ProfileTab({
     currentLevel,
     trustScore,
     globalRank,
-    reputationScore
+    reputationScore,
+    currentRankName,
+    nextRankName,
+    progressToNext
 }: ProfileTabProps) {
     return (
         <div className="space-y-8">
@@ -48,40 +54,93 @@ export default function ProfileTab({
             </div>
             <div className="space-y-4">
                 <div className="flex justify-between items-end">
-                    <span className="text-sm font-semibold text-white/80">Verification Level: <span className="text-white">Master</span></span>
-                    {reputationScore > 900 ? (
-                        <span className="text-xs font-bold text-[#8B82F6] bg-white/10 px-2 py-0.5 rounded uppercase tracking-wider">Elite Reached</span>
+                    <span className="text-sm font-semibold text-white/80">Rank: <span className="text-white font-bold text-lg ml-1">{currentRankName}</span></span>
+                    {progressToNext === 100 ? (
+                        <span className="text-xs font-bold text-[#8B82F6] bg-white/10 px-2 py-0.5 rounded uppercase tracking-wider italic">Maximum Rank Achieved</span>
                     ) : (
                         <span className="text-xs font-bold text-[#8B82F6] bg-white/10 px-2 py-0.5 rounded uppercase tracking-wider">
-                            {Math.min(100, Math.max(0, reputationScore / 10))}% to Elite
+                            {progressToNext}% to {nextRankName}
                         </span>
                     )}
                 </div>
                 <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden p-1 border border-white/5">
-                    <div className="h-full bg-gradient-to-r from-[#8B82F6] to-fuchsia-400 rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, reputationScore / 10)}%` }}></div>
+                    <div className="h-full bg-gradient-to-r from-[#8B82F6] to-fuchsia-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(139,130,246,0.5)]" style={{ width: `${progressToNext}%` }}></div>
                 </div>
                 <div className="flex justify-between text-[10px] text-white/40 uppercase font-bold tracking-widest">
                     <span>Apprentice</span>
-                    <span>Voyager</span>
-                    <span>Master</span>
-                    <span className="text-white/80">Elite</span>
+                    <span className={reputationScore >= 200 ? 'text-white/80' : ''}>Voyager</span>
+                    <span className={reputationScore >= 400 ? 'text-white/80' : ''}>Master</span>
+                    <span className={reputationScore >= 600 ? 'text-white/80' : ''}>Elite</span>
+                    <span className={reputationScore >= 800 ? 'text-white/80' : ''}>Grandmaster</span>
+                    <span className={reputationScore >= 1000 ? 'text-white/80' : ''}>Legend</span>
                 </div>
             </div>
 
             <div className="glass-panel bg-[rgba(255,255,255,0.4)] dark:bg-[rgba(30,27,75,0.4)] border border-white/40 dark:border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
                 <div className="w-20 h-20 rounded-2xl bg-[#8B82F6]/10 flex items-center justify-center mb-4">
-                    <span className="material-symbols-outlined text-5xl text-[#8B82F6]">explore</span>
+                    <span className="material-symbols-outlined text-5xl text-[#8B82F6]">stars</span>
                 </div>
-                <h3 className="text-2xl font-bold mb-1 dark:text-white text-gray-900">Voyager Rank</h3>
+                <h3 className="text-2xl font-bold mb-1 dark:text-white text-gray-900">{currentRankName} Rank</h3>
                 <p className="text-[#8B82F6] font-bold tracking-widest text-sm mb-6 uppercase">LEVEL {currentLevel} CONTRIBUTOR</p>
                 <div className="w-full pt-6 border-t border-black/5 dark:border-white/5 grid grid-cols-2 gap-4">
                     <div>
-                        <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider mb-1">Global Rank</div>
+                        <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider mb-1">Global Influence</div>
                         <div className="font-bold text-xl text-gray-900 dark:text-[#F3F4F6]">{globalRank ? `#${globalRank}` : '--'}</div>
                     </div>
                     <div>
-                        <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider mb-1">Trust Score</div>
+                        <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider mb-1">Trust Integrity</div>
                         <div className="font-bold text-xl text-gray-900 dark:text-[#F3F4F6]">{profileExists ? `${trustScore}/10` : '0/10'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="glass-panel bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-fuchsia-500/20 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-fuchsia-400">auto_awesome</span>
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">The Path to Legend</h3>
+                        <p className="text-white/60 text-sm">How to increase your rank and status</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="text-[#8B82F6] font-bold mb-1">Step 1</div>
+                        <div className="text-white font-bold mb-2 text-sm">Complete Missions</div>
+                        <p className="text-white/50 text-xs leading-relaxed">Every job you successfully finish awards you 25 Reputation points automatically.</p>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="text-fuchsia-400 font-bold mb-1">Step 2</div>
+                        <div className="text-white font-bold mb-2 text-sm">Prestige Milestones</div>
+                        <p className="text-white/50 text-xs leading-relaxed">Earn badges as you reach point milestones. Legend status requires consistent elite performance.</p>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="text-emerald-400 font-bold mb-1">Step 3</div>
+                        <div className="text-white font-bold mb-2 text-sm">Soulbound Trust</div>
+                        <p className="text-white/50 text-xs leading-relaxed">Ranks are locked on-chain. Your status is permanent proof of your expertise and reliability.</p>
+                    </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                    <div className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4">Prestige Milestones Table</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-8">
+                        {[
+                            { name: 'Apprentice', exp: '0', missions: 'Start' },
+                            { name: 'Voyager', exp: '100', missions: '4 Jobs' },
+                            { name: 'Master', exp: '250', missions: '10 Jobs' },
+                            { name: 'Elite', exp: '500', missions: '20 Jobs' },
+                            { name: 'Grandmaster', exp: '1000', missions: '40 Jobs' },
+                            { name: 'Legend', exp: '2500+', missions: '100+ Jobs' },
+                        ].map((milestone) => (
+                            <div key={milestone.name} className="flex flex-col">
+                                <span className={`text-sm font-bold ${reputationScore >= parseInt(milestone.exp) ? 'text-white' : 'text-white/40'}`}>
+                                    {milestone.name}
+                                </span>
+                                <span className="text-[10px] text-[#8B82F6] font-medium">{milestone.missions}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

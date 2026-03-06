@@ -10,14 +10,13 @@ import {
 import { coreWallet } from '@rainbow-me/rainbowkit/wallets'
 import { createConfig } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { avalancheFuji } from '@/lib/config'
-import { hardhat } from 'wagmi/chains'
+import { ACTIVE_CHAIN } from '@/lib/config'
 
 import '@rainbow-me/rainbowkit/styles.css'
 
 const queryClient = new QueryClient()
 
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? 'avaxverse-dev'
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '3a8170812b185d451f9513995ca74315'
 
 const connectors = connectorsForWallets(
     [
@@ -34,10 +33,9 @@ const connectors = connectorsForWallets(
 
 const wagmiConfig = createConfig({
     connectors,
-    chains: [hardhat, avalancheFuji],
+    chains: [ACTIVE_CHAIN],
     transports: {
-        [hardhat.id]: http('http://127.0.0.1:8545'),
-        [avalancheFuji.id]: http(),
+        [ACTIVE_CHAIN.id]: http(),
     },
     ssr: true,
 })

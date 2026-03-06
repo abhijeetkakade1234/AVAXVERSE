@@ -10,6 +10,7 @@ import AchievementsTab from './AchievementsTab'
 import MissionsTab from './MissionsTab'
 import SettingsTab from './SettingsTab'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import Footer from '@/components/Footer'
 
 interface ProfileData {
     exists: boolean;
@@ -203,6 +204,23 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
     const trustScore = Math.min(10.0, 5.0 + (rawReputation / 1000) * 5.0).toFixed(1);
     const globalRank = profile?.exists ? Math.max(1, 10000 - Math.floor(rawReputation * 12.5)) : null;
 
+    const RANKS = [
+        { name: 'Apprentice', min: 0 },
+        { name: 'Voyager', min: 100 },
+        { name: 'Master', min: 250 },
+        { name: 'Elite', min: 500 },
+        { name: 'Grandmaster', min: 1000 },
+        { name: 'Legend', min: 2500 },
+    ];
+
+    const currentRankIdx = [...RANKS].reverse().findIndex(r => rawReputation >= r.min);
+    const currentRank = RANKS[RANKS.length - 1 - currentRankIdx] || RANKS[0];
+    const nextRank = RANKS[RANKS.length - currentRankIdx] || null;
+
+    const progressToNext = nextRank
+        ? Math.floor(((rawReputation - currentRank.min) / (nextRank.min - currentRank.min)) * 100)
+        : 100;
+
     let parsedSocials = { twitter: '', github: '' };
     let parsedSkills: string[] = [];
     if (profile?.exists && profile.metadataURI) {
@@ -242,6 +260,9 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
                                 trustScore={trustScore}
                                 globalRank={globalRank}
                                 reputationScore={rawReputation}
+                                currentRankName={currentRank.name}
+                                nextRankName={nextRank?.name || 'Legendary Status'}
+                                progressToNext={progressToNext}
                             />
                         )}
 
@@ -268,6 +289,11 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
                         )}
                     </main>
                 </div>
+                <section className="px-4 md:px-8 py-20 mt-auto">
+                    <div className="max-w-7xl mx-auto w-full">
+                        <Footer />
+                    </div>
+                </section>
             </div>
         </>
     )
