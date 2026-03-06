@@ -387,6 +387,7 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
     job.status = JobStatus.CLOSED;
     reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE);
+    identityRegistry.incrementReputation(job.freelancer, 25);
     emit JobCompleted(jobId, escrowAddr);
   }
 
@@ -445,6 +446,10 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
   function getApplicants(uint256 jobId) external view returns (address[] memory) {
     return _jobApplicants[jobId];
+  }
+
+  function totalJobs() external view returns (uint256) {
+    return _jobs.length;
   }
 
   function getApplication(

@@ -1,6 +1,7 @@
 import "./globals.css"
 import { Web3Provider } from "@/components/Web3Provider"
 import OnboardingRedirect from "@/components/OnboardingRedirect"
+import { SnackbarProvider } from "@/context/SnackbarContext"
 
 export const metadata = {
   title: "AVAXVERSE",
@@ -23,8 +24,10 @@ export default function RootLayout({
       </head>
       <body className="font-display">
         <Web3Provider>
-          <OnboardingRedirect />
-          {children}
+          <SnackbarProvider>
+            <OnboardingRedirect />
+            {children}
+          </SnackbarProvider>
         </Web3Provider>
       </body>
     </html>

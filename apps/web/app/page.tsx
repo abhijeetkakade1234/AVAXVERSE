@@ -21,7 +21,7 @@ export default function Home() {
     },
     {
       title: "Reputation Assets",
-      desc: "Build a portable resume backed by non-transferable tokens and verified work history.",
+      desc: "Rise from Apprentice to Legend. Own a permanent, soulbound record of your elite performance and verified expertise.",
       bg: "bg-gray-900",
       icon: "verified",
       textColor: "text-white",

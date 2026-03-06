@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { ArrowLeft, ExternalLink, Zap, ShieldCheck, Search } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
+import { useSnackbar } from '@/context/SnackbarContext'
+import { translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES, ACTIVE_CHAIN } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, IDENTITY_REGISTRY_ABI, type EscrowState } from '@/lib/abis'
 import Navbar from '@/components/Navbar'
@@ -136,18 +138,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         query: { enabled: escrowReady },
     }) as { data: string | undefined }
 
+    const { showSnackbar } = useSnackbar()
+
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
     useEffect(() => {
-        if (!isSuccess) return
-        refetchJob()
-        refetchApplicants()
-        refetchMyApplication()
-        refetchEscrowState()
-        refetchDeliverable()
-        refetchDisputeReason()
-    }, [isSuccess, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchJob, refetchMyApplication])
+        if (isSuccess) {
+            showSnackbar('Mission update successful!', 'success')
+            refetchJob()
+            refetchApplicants()
+            refetchMyApplication()
+            refetchEscrowState()
+            refetchDeliverable()
+            refetchDisputeReason()
+        }
+    }, [isSuccess, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchJob, refetchMyApplication, showSnackbar])
+
+    useEffect(() => {
+        if (error) {
+            showSnackbar(translateError(error), 'error')
+        }
+    }, [error, showSnackbar])
 
     if (isJobLoading) {
         return (
@@ -175,12 +187,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const escrowStateName: EscrowState = escrowStateIndex !== undefined ? ESCROW_STATES[escrowStateIndex] : 'FUNDED'
     const createdDate = job.createdAt > 0n ? new Date(Number(job.createdAt * 1000n)).toLocaleDateString('en-US') : '-'
 
-    const txErrorMessage = (() => {
-        if (!error) return null
-        const message = error.message.toLowerCase()
-        if (message.includes('user rejected')) return 'Transaction was rejected in wallet.'
-        return error.message.split('\n')[0]
-    })()
 
     const statusLabel = job.status === 3 && escrowReady ? `FUNDED / ${escrowStateName}` : jobStatus
     const flowStepIndex = (() => {
@@ -754,9 +760,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        {localError && <div className="text-sm text-red-500 font-bold">{localError}</div>}
-                        {txErrorMessage && <div className="text-sm text-red-500 font-bold">{txErrorMessage}</div>}
-                        {isSuccess && <div className="text-sm text-emerald-600 font-bold">Transaction confirmed on-chain.</div>}
+                        {/* Success and error messages are handled by the Snackbar */}
                         {!isClient && myApplication?.exists && (
                             <button
                                 onClick={handleWithdrawApplicationStake}

@@ -30,10 +30,16 @@ import { hardhat } from 'viem/chains'
 
 const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'localhost'
 
+const localHardhat = {
+  ...hardhat,
+  name: 'AVAX Local',
+  nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+} as const satisfies Chain
+
 export const ACTIVE_CHAIN = 
   NETWORK_NAME === 'mainnet' ? avalancheMainnet :
   NETWORK_NAME === 'testnet' ? avalancheFuji :
-  hardhat
+  localHardhat
 
 /** AVAXVERSE deployed contract addresses */
 export const CONTRACT_ADDRESSES = {

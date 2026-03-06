@@ -5,12 +5,15 @@ import { Info } from 'lucide-react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther, parseEther } from 'viem'
 import Link from 'next/link'
+import { useSnackbar } from '@/context/SnackbarContext'
+import { translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI } from '@/lib/abis'
 
 const VALIDATOR_NETWORKS = ['Avalanche DAO Mainnet', 'Fuji Testnet', 'Private Subnet']
 
 export default function CreateJob() {
+    const { showSnackbar } = useSnackbar()
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
     const { data: clientCommitmentWei } = useReadContract({
@@ -82,13 +85,17 @@ export default function CreateJob() {
 
     const canSubmit = form.title.trim() !== '' && form.budget !== '' && !isPending && !isConfirming
 
-    const walletErrorMessage = (() => {
-        if (!error) return null
-        const raw = error.message.toLowerCase()
-        if (raw.includes('user rejected')) return 'Transaction was rejected in wallet. Please approve to continue.'
-        if (raw.includes('insufficient funds')) return 'Insufficient AVAX for commitment deposit + gas.'
-        return error.message.split('\n')[0]
-    })()
+    React.useEffect(() => {
+        if (isSuccess) {
+            showSnackbar('Mission posted successfully!', 'success')
+        }
+    }, [isSuccess, showSnackbar])
+
+    React.useEffect(() => {
+        if (error) {
+            showSnackbar(translateError(error), 'error')
+        }
+    }, [error, showSnackbar])
 
     if (isSuccess) {
         return (
@@ -279,18 +286,7 @@ export default function CreateJob() {
                         Wallet connection required for posting on-chain.
                     </p>
 
-                    {submitError && (
-                        <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-sm">error</span>
-                            {submitError}
-                        </div>
-                    )}
-                    {walletErrorMessage && (
-                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-sm">warning</span>
-                            {walletErrorMessage}
-                        </div>
-                    )}
+                    {/* Success and error messages are handled by the Snackbar */}
                 </div>
             </div>
         </div>
