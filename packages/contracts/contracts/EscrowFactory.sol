@@ -361,7 +361,7 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     bool canWithdraw;
     if (job.status == JobStatus.OPEN) {
       canWithdraw = true;
-    } else if (job.status == JobStatus.SELECTED) {
+    } else if (job.status == JobStatus.SELECTED || job.status == JobStatus.ACCEPTED) {
       canWithdraw = msg.sender != job.freelancer;
     } else {
       canWithdraw = true;

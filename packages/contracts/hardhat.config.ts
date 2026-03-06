@@ -30,6 +30,11 @@ const config: HardhatUserConfig = {
       chainId: 43113,
       gasPrice: 25000000000,
     },
+    mainnet: {
+      url: process.env.MAINNET_RPC_URL || 'https://api.avax.network/ext/bc/C/rpc',
+      accounts: [PRIVATE_KEY],
+      chainId: 43114,
+    },
   },
   etherscan: {
     apiKey: {

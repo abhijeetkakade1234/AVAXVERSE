@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ExternalLink, Zap, ShieldCheck, Search } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
-import { CONTRACT_ADDRESSES } from '@/lib/config'
+import { CONTRACT_ADDRESSES, ACTIVE_CHAIN } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, IDENTITY_REGISTRY_ABI, type EscrowState } from '@/lib/abis'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -173,7 +173,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const jobStatus = JOB_STATUS_LABELS[job.status] ?? 'UNKNOWN'
     const escrowStateIndex = state !== undefined ? Number(state) : undefined
     const escrowStateName: EscrowState = escrowStateIndex !== undefined ? ESCROW_STATES[escrowStateIndex] : 'FUNDED'
-    const createdDate = job.createdAt > BigInt(0) ? new Date(Number(job.createdAt) * BigInt(1000)).toLocaleDateString('en-US') : '-'
+    const createdDate = job.createdAt > 0n ? new Date(Number(job.createdAt * 1000n)).toLocaleDateString('en-US') : '-'
 
     const txErrorMessage = (() => {
         if (!error) return null
@@ -378,6 +378,42 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         </div>
 
+                        {/* Dynamic Mission Status Card */}
+                        <div className="glass-panel bg-primary/10 border border-primary/20 rounded-3xl p-6 flex items-start gap-4">
+                            <div className="mt-1 p-2 bg-primary/20 rounded-xl text-primary">
+                                <Zap size={20} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold">What&apos;s next?</h3>
+                                <div className="text-sm opacity-80 mt-1">
+                                    {job.status === 0 && (
+                                        isClient ? "Waiting for operators to apply. Review proposals below when they arrive." : "This mission is open for applications. Submit your proposal to be considered!"
+                                    )}
+                                    {job.status === 1 && (
+                                        isSelectedOperator ? "You have been selected! Click 'Accept Assignment' below to confirm you're ready to start." : isClient ? "Waiting for the selected operator to accept the assignment." : "An operator has been selected and is reviewing the assignment."
+                                    )}
+                                    {job.status === 2 && (
+                                        isSelectedOperator ? "Assignment accepted! Please wait while the client funds the escrow to formally start the mission." : isClient ? "Operator has accepted! Now you must fund the escrow budget to secure the work." : "Selection confirmed. Waiting for client funding."
+                                    )}
+                                    {job.status === 3 && (
+                                        isSelectedOperator ? (
+                                            escrowStateIndex === 0 ? "Mission is live! You can now start working and submit your deliverables below." :
+                                                escrowStateIndex === 1 ? "Deliverables submitted. Waiting for the client to review and release funds." :
+                                                    escrowStateIndex === 3 ? "Dispute active. Please wait for mediator resolution." :
+                                                        "Mission active. Follow the escrow state below."
+                                        ) : isClient ? (
+                                            escrowStateIndex === 0 ? "Escrow funded. The operator is now authorized to work." :
+                                                escrowStateIndex === 1 ? "Deliverables submitted! Review the work and approve to release funds." :
+                                                    escrowStateIndex === 3 ? "Dispute raised. A mediator will review the evidence." :
+                                                        "Escrow active. Monitor progress below."
+                                        ) : "Mission in progress."
+                                    )}
+                                    {job.status === 4 && "Mission successfully completed and funds released."}
+                                    {job.status === 5 && "This mission has been cancelled."}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <PartyProfileCard role="Client" addr={job.client} />
                             {job.freelancer !== ZERO_ADDRESS ? (
@@ -455,7 +491,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        {job.status === 1 && (
+                        {(job.status === 1 || job.status === 2) && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {isSelectedOperator && !job.operatorAccepted && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6">
@@ -521,7 +557,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        {job.status === 2 && escrowReady && (
+                        {job.status === 3 && escrowReady && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                     <h2 className="text-xl font-bold">Work Delivery</h2>
@@ -724,7 +760,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         {!isClient && myApplication?.exists && (
                             <button
                                 onClick={handleWithdrawApplicationStake}
-                                disabled={isTxBusy || job.status === 1 && isSelectedOperator}
+                                disabled={isTxBusy || ((job.status === 1 || job.status === 2) && isSelectedOperator)}
                                 className="py-2 px-4 rounded-lg border border-white/20 text-sm font-bold disabled:opacity-40"
                             >
                                 Withdraw Application Stake
@@ -844,7 +880,10 @@ function getDeliverableHref(value: string) {
     if (/^https?:\/\//i.test(v)) return v
     if (/^ipfs:\/\//i.test(v)) return `https://ipfs.io/ipfs/${v.replace(/^ipfs:\/\//i, '')}`
     if (/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(v) || /^bafy[a-z0-9]{20,}$/i.test(v)) return `https://ipfs.io/ipfs/${v}`
-    if (/^0x([A-Fa-f0-9]{64})$/.test(v)) return `https://testnet.snowtrace.io/tx/${v}`
+    if (/^0x([A-Fa-f0-9]{64})$/.test(v)) {
+        const explorer = ACTIVE_CHAIN.blockExplorers?.default?.url || 'https://snowtrace.io'
+        return `${explorer}/tx/${v}`
+    }
     return null
 }
 

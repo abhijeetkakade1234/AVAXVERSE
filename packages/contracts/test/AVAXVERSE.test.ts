@@ -270,4 +270,24 @@ describe('EscrowFactory -> Escrow', () => {
     console.log("Job status after operator cancel:", job.status.toString());
     expect(job.status).to.equal(5) // CANCELLED (was 4)
   })
+
+  it('verifies selected operator stake is locked during ACCEPTED phase', async () => {
+    const { alice, bob, factory } = await setupWithProfiles()
+    const budget = ethers.parseEther('1')
+    const commitment = await factory.clientCommitmentWei()
+
+    await factory.connect(alice).createJob('Stake lock job', budget, 'ipfs://meta', { value: commitment })
+    const jobId = 0n
+    const requiredStake = await factory.requiredStakeFor(bob.address)
+    await factory.connect(bob).applyToJob(jobId, 'ipfs://proposal-bob', { value: requiredStake })
+    await factory.connect(alice).selectOperator(jobId, bob.address)
+    await factory.connect(bob).acceptAssignment(jobId)
+
+    const job = await factory.getJob(jobId)
+    expect(job.status).to.equal(2) // ACCEPTED
+
+    await expect(
+      factory.connect(bob).withdrawApplicationStake(jobId),
+    ).to.be.revertedWith('EscrowFactory: selected operator stake locked')
+  })
 })
