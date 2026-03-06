@@ -1,8 +1,13 @@
+'use client'
+
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
 import Logo from './Logo'
+import { useTheme } from './ThemeProvider'
 
 export default function Navbar() {
+  const { theme, toggle } = useTheme()
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
       <Logo />
@@ -15,7 +20,19 @@ export default function Navbar() {
         <Link href="/vision" className="hover:text-red-500 transition-colors cursor-pointer">Vision</Link>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Dark/Light Mode Toggle */}
+        <button
+          onClick={toggle}
+          aria-label="Toggle theme"
+          className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 hover:scale-110"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+          </span>
+        </button>
+
         <ConnectButton
           showBalance={true}
           chainStatus="icon"

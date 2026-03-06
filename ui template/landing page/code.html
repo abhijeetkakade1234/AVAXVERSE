@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AVAXVERSE Landing Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#7B61FF",
+                        "background-light": "#B4AAFD",
+                        "background-dark": "#1A1A2E",
+                        "card-dark-1": "#232336",
+                        "card-dark-2": "#3B3561",
+                        "card-blue": "#4F8FFA",
+                        "card-yellow": "#FFFFCC",
+                        "card-white": "#F8F8F8",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        "2xl": "1.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .glass-card {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .abstract-mesh {
+                background-image: 
+                    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 0% 100%, hsla(321,50%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 50% 100%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 100% 100%, hsla(253,16%,7%,1) 0, transparent 50%);
+            }
+            .cloud-shape {
+                filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+                border: 4px solid rgba(255,255,255,0.4);
+            }
+        }.parallax-layer {
+            position: absolute;
+            will-change: transform;
+        }
+    </style>
+</head>
+<body class="bg-[#B4AAFD] bg-gradient-to-b from-[#B4AAFD] via-[#9B8CFA] to-[#1A1A2E] dark:from-[#1A1A2E] dark:to-[#121222] text-gray-900 dark:text-white font-display antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+<div class="absolute top-[15%] left-[5%] w-64 h-32 bg-gradient-to-br from-white to-purple-100 rounded-full cloud-shape opacity-40 blur-[1px]" style="transform: translateY(calc(var(--scroll-y, 0) * -0.2px));"></div>
+<div class="absolute top-[45%] right-[-5%] w-80 h-40 bg-gradient-to-br from-indigo-100 to-white rounded-full cloud-shape opacity-30 blur-[2px]" style="transform: translateY(calc(var(--scroll-y, 0) * -0.15px));"></div>
+<div class="absolute top-[70%] left-[-10%] w-96 h-48 bg-gradient-to-br from-white to-pink-50 rounded-[100px] cloud-shape opacity-60" style="transform: translateY(calc(var(--scroll-y, 0) * -0.5px));"></div>
+<div class="absolute top-[120%] right-[10%] w-72 h-36 bg-gradient-to-tr from-white to-blue-50 rounded-[80px] cloud-shape opacity-50" style="transform: translateY(calc(var(--scroll-y, 0) * -0.4px));"></div>
+<div class="absolute top-[180%] left-[20%] w-[500px] h-[200px] bg-white rounded-full cloud-shape opacity-80" style="transform: translateY(calc(var(--scroll-y, 0) * -0.8px));"></div>
+<div class="absolute top-[10%] left-[-10%] w-[600px] h-[300px] bg-white rounded-[100%] blur-[100px] opacity-30 mix-blend-screen"></div>
+<div class="absolute top-[60%] left-[10%] w-[500px] h-[250px] bg-purple-200 rounded-[100%] blur-[100px] opacity-30 mix-blend-screen"></div>
+</div>
+<script>
+        // Simple scroll variable for CSS transforms to simulate parallax without heavy JS animations
+        window.addEventListener('scroll', () => {
+            document.body.style.setProperty('--scroll-y', window.scrollY + 'px');
+        });
+    </script>
+<nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-icons text-white">layers</span>
+<span class="font-bold text-xl text-white">AVAXVERSE</span>
+</div>
+<div class="hidden md:flex items-center bg-white/20 backdrop-blur-md rounded-full px-6 py-2 gap-6 text-sm font-medium text-white shadow-sm border border-white/10">
+<a class="hover:text-white/80 transition-colors drop-shadow-sm" href="#">Features</a>
+<a class="hover:text-white/80 transition-colors drop-shadow-sm" href="#">Network</a>
+<a class="hover:text-white/80 transition-colors drop-shadow-sm" href="#">Explore</a>
+<a class="hover:text-white/80 transition-colors drop-shadow-sm" href="#">Company</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-white text-primary px-4 py-2 rounded-full font-semibold text-sm hover:bg-white/90 transition-colors shadow-sm">
+                Connect Wallet
+            </button>
+</div>
+</nav>
+<main class="flex-grow pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full flex flex-col gap-24 relative z-10">
+<section class="relative pt-10 pb-10 min-h-[85vh] flex items-center justify-center">
+<div class="relative z-10 w-full max-w-5xl">
+<div class="absolute inset-0 abstract-mesh opacity-40 blur-3xl rounded-[4rem] -rotate-3 scale-110"></div>
+<div class="relative glass-card rounded-[4rem] rounded-tl-[8rem] rounded-br-[8rem] p-12 md:p-24 flex flex-col items-center shadow-2xl backdrop-blur-3xl bg-white/15 dark:bg-black/20 text-center border-white/40 overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-30">
+<div class="absolute -top-1/4 -left-1/4 w-full h-full bg-gradient-to-br from-purple-400 to-transparent rounded-full blur-3xl"></div>
+<div class="absolute -bottom-1/4 -right-1/4 w-full h-full bg-gradient-to-tl from-blue-400 to-transparent rounded-full blur-3xl"></div>
+</div>
+<div class="relative z-10">
+<div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-6 py-3 rounded-full mb-10 shadow-sm border border-white/30">
+<span class="text-white text-xs font-bold uppercase tracking-widest">The Avalanche Operating Layer</span>
+</div>
+<h1 class="text-5xl md:text-8xl font-bold text-white mb-10 leading-[1.1] tracking-tight drop-shadow-2xl">
+                            Your home for identity,<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white/80">work, and finance.</span>
+</h1>
+<div class="flex flex-col items-center gap-8">
+<button class="bg-white text-primary px-12 py-6 rounded-full font-bold text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.3)] flex items-center gap-4 group">
+<span class="material-icons group-hover:rotate-12 transition-transform">rocket_launch</span>
+                                Enter the Verse
+                            </button>
+<p class="text-white/90 text-sm font-semibold uppercase tracking-[0.3em] drop-shadow-md">Join the next generation of Web3</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-8 relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 bg-white/40 dark:bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20">
+<span class="material-icons text-primary dark:text-white text-base">sync</span>
+<span class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Core Pillars</span>
+</div>
+<button class="bg-white/40 dark:bg-white/10 p-3 rounded-full hover:bg-white/60 transition-colors border border-white/20 backdrop-blur-md">
+<span class="material-icons text-gray-900 dark:text-white">arrow_forward</span>
+</button>
+</div>
+<div class="flex overflow-x-auto gap-8 pb-8 hide-scrollbar snap-x">
+<div class="snap-start flex-none w-[320px] h-[450px] bg-primary/20 dark:bg-card-dark-1 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/20 shadow-xl">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Sovereign Identity</h3>
+<p class="text-gray-700 dark:text-gray-300 leading-relaxed">Own your data and digital presence across the Avalanche ecosystem seamlessly.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<div class="p-4 bg-white/20 rounded-full backdrop-blur-sm border border-white/30 group-hover:scale-110 transition-transform">
+<img alt="Identity Icon" class="w-20 h-20 object-cover rounded-full mix-blend-overlay opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKpf-AOXv5QtSGJdsK5H1E4AlRFDDhbgTuFHSIS6dMtf3G-lu_4Isl1Nfj7mV69XG6OVzmI3UhqqpIxWG6nr1z1mcIlxRg9avsuI9pC8TOFJYFXeFThxBSLty-wmZLRKKjMVY5QOO7MkKCAyv37Zpv4RR3HpGWxvlxkWTvPwWWcxsniSBeiI7IBHKNq4Q9Kvv1_ALZ4sCuQAKJGn6JMDTzgFCEB8tT0QVkQta0SPH1oBeuqAJhwdiAmlIglsD2iVnuWWahRAL9Dtw"/>
+</div>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[450px] bg-gray-900 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/10 shadow-2xl">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-white mb-4">Trustless Finance</h3>
+<p class="text-gray-300 leading-relaxed">Access decentralized financial tools with institutional-grade security.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<div class="p-4 bg-white/10 rounded-full border border-white/10 group-hover:scale-110 transition-transform">
+<img alt="Finance Icon" class="w-20 h-20 object-cover rounded-full mix-blend-screen opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRZ2KR2ojUoEBoxt65RI4flv6LLWx9Wzv75CrrX7hpXkwDq2tCAiAUPk94NuinbanFub3HldXRnNnv_O3gQKGlKEmlxDCWokrARbh6G-4jxqQ0c98q0lM5Nn7deXTaR1G94GsoqDnBgnVAs5dBbzg6_Mp9qoZkrx9M6v5oGkUEuOlDgCvNlvqqNiNFwMSHfYgZOrvP8v0CRQtxyiKdwpoOKUTPLpStkfpsKEScEBJN97arvLuB75wz94oYEgHXxeRTIe7lno1jlwI"/>
+</div>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[450px] bg-white rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group shadow-xl border border-black/5">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-gray-900 mb-4">Verifiable Reputation</h3>
+<p class="text-gray-600 leading-relaxed">Build a portable on-chain reputation based on your actual activity and achievements.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<div class="p-4 bg-black/5 rounded-full border border-black/5 group-hover:scale-110 transition-transform">
+<img alt="Reputation Icon" class="w-20 h-20 object-cover rounded-full opacity-90 mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM8-asCWJKGEm_5pMsCe2Kq7BFWLzX3-Ugnmnz-DN4hKLazNzUlTkV-QxRs1-FvAsnrmkG2XOEHnNM1eBO8uJmh57iVPChzW9dKFz66DtMv3CnB3xil9vuM9MAejP66ct2gF2YFAvUmXimMQ9ZBZHkg2Z_sQKL1jfpKBsXUkyEaKLolxGL_Vq3BV9KD9VWhF3aG8wACVGFbHzVkLo4piQjfQqeO8g2Bg8WlQ_EXEGFMOShA3fN9NDr-uGdks9oMRUpWVW2noYb-zE"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-8">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 bg-white/20 dark:bg-white/10 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md">
+<span class="material-icons text-white text-base">account_balance_wallet</span>
+<span class="text-sm font-bold text-white uppercase tracking-wider">Ecosystem Integration</span>
+</div>
+</div>
+<div class="flex overflow-x-auto gap-8 pb-8 hide-scrollbar snap-x">
+<div class="snap-start flex-none w-[320px] h-[450px] bg-card-blue rounded-[3rem] p-10 flex flex-col justify-between border border-white/20 shadow-2xl relative group">
+<div class="bg-white/10 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-white mb-4">One home for all your assets.</h3>
+<p class="text-white/80 leading-relaxed">Manage tokens, NFTs, and yield positions from a single dashboard.</p>
+</div>
+<div class="flex justify-end mt-auto relative z-10">
+<span class="material-symbols-outlined text-7xl text-white/40 drop-shadow-lg group-hover:rotate-6 transition-transform">account_balance</span>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[450px] bg-card-dark-2 rounded-[3rem] p-10 flex flex-col justify-between border border-white/10 shadow-2xl relative group">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-white mb-4">Cross-subnet composability.</h3>
+<p class="text-white/80 leading-relaxed">Interact with any application across Avalanche subnets effortlessly.</p>
+</div>
+<div class="flex justify-end mt-auto relative z-10">
+<span class="material-symbols-outlined text-7xl text-white/40 drop-shadow-lg group-hover:scale-110 transition-transform">hub</span>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[450px] bg-gray-800 rounded-[3rem] p-10 flex flex-col justify-between border border-white/10 shadow-2xl relative group">
+<div class="relative z-10">
+<h3 class="text-2xl font-bold text-white mb-4">Seamless fiat on-ramps.</h3>
+<p class="text-white/80 leading-relaxed">Convert between fiat and crypto using major payment providers.</p>
+</div>
+<div class="flex justify-end mt-auto relative z-10">
+<span class="material-symbols-outlined text-7xl text-white/40 drop-shadow-lg group-hover:-translate-y-2 transition-transform">currency_exchange</span>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-8">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 bg-white/20 dark:bg-white/10 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md">
+<span class="material-icons text-white text-base">shield</span>
+<span class="text-sm font-bold text-white uppercase tracking-wider">Your security</span>
+</div>
+<button class="bg-white/20 dark:bg-white/10 p-3 rounded-full hover:bg-white/30 transition-colors border border-white/20 backdrop-blur-md">
+<span class="material-icons text-white">arrow_forward</span>
+</button>
+</div>
+<div class="flex overflow-x-auto gap-8 pb-8 hide-scrollbar snap-x">
+<div class="snap-start flex-none w-[320px] h-[420px] bg-white rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group">
+<div class="relative z-10">
+<h3 class="text-xl font-bold text-gray-900 mb-4">Self-custodial means you control your funds.</h3>
+<p class="text-gray-600 leading-relaxed">We never have access to your private keys or assets.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<span class="material-symbols-outlined text-7xl text-gray-200 group-hover:text-primary/20 transition-colors">lock</span>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[420px] bg-card-yellow rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group">
+<div class="relative z-10">
+<h3 class="text-xl font-bold text-gray-900 mb-4">Our global Support team is here for you 24/7.</h3>
+<p class="text-gray-600 leading-relaxed">Get help whenever you need it, wherever you are.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<span class="material-symbols-outlined text-7xl text-yellow-600/20 group-hover:text-yellow-600/40 transition-colors">support_agent</span>
+</div>
+</div>
+<div class="snap-start flex-none w-[320px] h-[420px] bg-[#FFE0E0] rounded-[3rem] p-10 flex flex-col justify-between shadow-xl border border-black/5 group">
+<div class="relative z-10">
+<h3 class="text-xl font-bold text-gray-900 mb-4">Scam detection flags malicious transactions.</h3>
+<p class="text-gray-600 leading-relaxed">Stay safe with real-time alerts before you sign.</p>
+</div>
+<div class="flex justify-end mt-auto">
+<span class="material-symbols-outlined text-7xl text-red-400/20 group-hover:text-red-400/40 transition-colors">gpp_bad</span>
+</div>
+</div>
+</div>
+</section>
+<section class="text-center py-32 glass-card rounded-[4rem] p-12 mt-12 border border-white/20 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50"></div>
+<div class="relative z-10">
+<p class="text-white/80 mb-6 text-sm font-bold uppercase tracking-widest">Trusted by a growing community</p>
+<h2 class="text-5xl md:text-7xl font-bold text-white mb-12 leading-tight drop-shadow-2xl">
+                    Get started.<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">Enter AVAXVERSE.</span>
+</h2>
+<button class="bg-white text-primary px-12 py-6 rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.2)] inline-flex items-center gap-3">
+<span class="material-icons">rocket_launch</span>
+                    Launch App
+                </button>
+</div>
+</section>
+<footer class="bg-card-white/90 dark:bg-card-dark-1/90 backdrop-blur-xl rounded-[3rem] p-10 md:p-16 shadow-2xl border border-white/20 dark:border-white/5">
+<div class="flex flex-col lg:flex-row justify-between gap-16 border-b border-gray-200 dark:border-gray-700/50 pb-16 mb-12">
+<div class="flex-1 max-w-lg">
+<div class="flex items-center gap-2 mb-8">
+<span class="material-icons text-primary text-3xl">layers</span>
+<span class="font-bold text-2xl tracking-tighter text-gray-900 dark:text-white">AVAXVERSE</span>
+</div>
+<h3 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">Stay updated</h3>
+<p class="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">Sign up for our newsletter and join the growing AVAXVERSE community.</p>
+<div class="flex flex-col sm:flex-row gap-3">
+<input class="flex-1 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-white/10 rounded-full px-8 py-4 text-base focus:ring-2 focus:ring-primary outline-none text-gray-900 dark:text-white shadow-inner" placeholder="Enter your email" type="email"/>
+<button class="bg-primary text-white px-10 py-4 rounded-full text-base font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">Sign up</button>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-12 lg:gap-20 text-sm">
+<div class="flex flex-col gap-6">
+<h4 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Product</h4>
+<div class="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
+<a class="hover:text-primary transition-colors" href="#">Download</a>
+<a class="hover:text-primary transition-colors" href="#">Security</a>
+<a class="hover:text-primary transition-colors" href="#">Support</a>
+<a class="hover:text-primary transition-colors" href="#">Feature Requests</a>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<h4 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Resources</h4>
+<div class="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
+<a class="hover:text-primary transition-colors" href="#">Explore</a>
+<a class="hover:text-primary transition-colors" href="#">Learn</a>
+<a class="hover:text-primary transition-colors" href="#">Blog</a>
+<a class="hover:text-primary transition-colors" href="#">Docs</a>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<h4 class="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Company</h4>
+<div class="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
+<a class="hover:text-primary transition-colors" href="#">About</a>
+<a class="hover:text-primary transition-colors" href="#">Careers</a>
+<a class="hover:text-primary transition-colors" href="#">Press Kit</a>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-medium text-gray-500">
+<div class="flex items-center gap-3 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 px-4 py-2 rounded-full border border-green-200 dark:border-green-800/30">
+<span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
+                    Systems Operational
+                </div>
+<p>© 2024 AVAXVERSE Ecosystem. All rights reserved.</p>
+<div class="flex gap-8">
+<a class="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">Privacy Policy</a>
+</div>
+</div>
+</footer>
+</main>
+
+</body></html>

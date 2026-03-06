@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AVAXVERSE - Mission Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#8B82F6",
+                        "background-light": "#C3BAF8",
+                        "background-dark": "#0F0E23",
+                        "card-light": "rgba(255, 255, 255, 0.4)",
+                        "card-dark": "rgba(30, 27, 75, 0.4)",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E1B4B",
+                        "text-light": "#1F2937",
+                        "text-dark": "#F3F4F6",
+                        "text-muted-light": "#4B5563",
+                        "text-muted-dark": "#9CA3AF"
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem",
+                        "3xl": "2.5rem"
+                    }
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Inter', sans-serif;
+            }
+        }
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .mission-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mission-card-hover:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 40px -15px rgba(139, 130, 246, 0.25);
+        }
+        .dark .mission-card-hover:hover {
+            background: rgba(30, 27, 75, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen antialiased flex flex-col transition-colors duration-300">
+<nav class="sticky top-0 z-50 px-6 py-4 glass-panel bg-background-light/60 dark:bg-background-dark/60 border-b border-white/20 dark:border-white/10 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xl">A</div>
+<span class="font-bold text-xl tracking-tight">AVAXVERSE</span>
+</div>
+<div class="hidden md:flex items-center bg-white/30 dark:bg-black/20 rounded-full px-2 py-1 shadow-sm border border-white/40 dark:border-white/10">
+<a class="px-4 py-2 text-sm font-medium hover:bg-white dark:hover:bg-surface-dark rounded-full transition-colors" href="#">Dashboard</a>
+<a class="px-4 py-2 text-sm font-medium hover:bg-white dark:hover:bg-surface-dark rounded-full transition-colors" href="#">Identity</a>
+<a class="px-4 py-2 text-sm font-medium bg-white dark:bg-surface-dark rounded-full shadow-sm transition-colors" href="#">Browse Ops</a>
+<a class="px-4 py-2 text-sm font-medium hover:bg-white dark:hover:bg-surface-dark rounded-full transition-colors" href="#">Finance</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-px bg-black/10 dark:bg-white/10 mx-1"></div>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-full font-medium transition-colors shadow-sm">
+<span>0x7a...4d9</span>
+<span class="material-symbols-outlined text-sm">wallet</span>
+</button>
+</div>
+</nav>
+<main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+<div>
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">Mission Marketplace</h1>
+<p class="text-text-muted-light dark:text-text-muted-dark font-medium">Browse high-stakes operations across the Avalanche network.</p>
+</div>
+<button class="bg-white dark:bg-primary text-primary dark:text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-xl hover:scale-105 transition-transform flex items-center gap-3 w-fit">
+<span class="material-symbols-outlined">add_circle</span>
+                Post a Mission
+            </button>
+</div>
+<div class="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-4 mb-10 shadow-sm flex flex-col lg:flex-row items-center gap-4">
+<div class="relative flex-1 w-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted-light dark:text-text-muted-dark">search</span>
+<input class="w-full bg-white/30 dark:bg-black/20 border-none rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary text-sm font-medium placeholder:text-text-muted-light/60" placeholder="Search mission intel, subnets, or protocols..." type="text"/>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<div class="relative min-w-[160px] flex-1 lg:flex-initial">
+<select class="w-full bg-white/30 dark:bg-black/20 border-none rounded-2xl py-3 pl-4 pr-10 focus:ring-2 focus:ring-primary text-sm font-bold appearance-none">
+<option>Specialization</option>
+<option>DeFi</option>
+<option>Subnets</option>
+<option>Security</option>
+<option>Infrastructure</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted-light">expand_more</span>
+</div>
+<div class="relative min-w-[160px] flex-1 lg:flex-initial">
+<select class="w-full bg-white/30 dark:bg-black/20 border-none rounded-2xl py-3 pl-4 pr-10 focus:ring-2 focus:ring-primary text-sm font-bold appearance-none">
+<option>Reward Range</option>
+<option>0 - 10 AVAX</option>
+<option>10 - 100 AVAX</option>
+<option>100+ AVAX</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted-light">payments</span>
+</div>
+<button class="bg-primary/10 text-primary p-3 rounded-2xl hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+<span class="material-symbols-outlined text-3xl">hub</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">50.0 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">Escrow Backed</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">Cross-Chain Liquidity Subnet Deployment</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Architect and deploy a custom subnet designed specifically for high-frequency liquidity provisioning using Teleporter.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-yellow-500 flex items-center justify-center text-[10px] text-white font-bold">R4</div>
+</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 4+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Subnets</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">DeFi</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Go-AVAX</span>
+</div>
+</div>
+</div>
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+<span class="material-symbols-outlined text-3xl">security</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">125.0 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">Urgent Op</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">Smart Contract Security Audit - V3</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Deep-dive penetration testing for a new lending protocol's liquidation engine. High precision required.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-purple-600 flex items-center justify-center text-[10px] text-white font-bold">R8</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 8+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Security</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Audit</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Solidity</span>
+</div>
+</div>
+</div>
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+<span class="material-symbols-outlined text-3xl">monitoring</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">15.5 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">Entry Level</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">Validator Node Monitoring Dashboard</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Create a lightweight Grafana/Prometheus integration for tracking multi-validator health status.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-green-500 flex items-center justify-center text-[10px] text-white font-bold">R2</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 2+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Infra</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">DevOps</span>
+</div>
+</div>
+</div>
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-500">
+<span class="material-symbols-outlined text-3xl">token</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">80.0 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">Subnet Op</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">Tokenomics Engine for GameFi Subnet</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Develop a custom minting and burning mechanism integrated with Subnet-EVM precompiles.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-yellow-500 flex items-center justify-center text-[10px] text-white font-bold">R5</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 5+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">GameFi</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Subnets</span>
+</div>
+</div>
+</div>
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+<span class="material-symbols-outlined text-3xl">terminal</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">250.0 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">High Stakes</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">L1 Core Optimization Module</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Research and implement a custom consensus performance tweak for a sovereign subnet running AvalancheGo.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-red-600 flex items-center justify-center text-[10px] text-white font-bold">R10</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 10+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">L1</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Go</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Core</span>
+</div>
+</div>
+</div>
+<div class="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
+<span class="material-symbols-outlined text-3xl">query_stats</span>
+</div>
+<div class="text-right">
+<div class="text-2xl font-black text-primary">45.0 AVAX</div>
+<div class="text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">Analytics</div>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-2 leading-tight">Teleporter Messaging Visualizer</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark line-clamp-2 mb-6">Front-end dashboard to track cross-chain messages via Teleporter in real-time between P-Chain and Subnets.</p>
+<div class="mt-auto space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-surface-dark bg-yellow-500 flex items-center justify-center text-[10px] text-white font-bold">R3</div>
+<span class="text-xs font-bold text-text-muted-light dark:text-text-muted-dark">Req. Reputation: Level 3+</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Frontend</span>
+<span class="px-3 py-1 bg-white/40 dark:bg-black/20 rounded-lg text-[10px] font-bold tracking-wider uppercase">Data</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12 flex justify-center">
+<button class="flex items-center gap-2 py-4 px-8 glass-panel bg-white/30 dark:bg-white/5 border border-white/40 dark:border-white/10 rounded-2xl text-sm font-bold hover:bg-white/50 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-lg">sync</span>
+                Sync More Missions
+            </button>
+</div>
+</main>
+<footer class="mt-auto border-t border-white/20 dark:border-white/10 py-8 text-sm text-text-muted-light dark:text-text-muted-dark glass-panel bg-white/10 dark:bg-black/20">
+<div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-6">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-400"></span>
+<span class="font-medium">Marketplace Online</span>
+</div>
+<div class="h-4 w-px bg-white/20"></div>
+<span>Protocol v1.0.4</span>
+</div>
+<p>© 2024 AVAXVERSE Protocol. Secure Mission Escrow.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors font-medium" href="#">Docs</a>
+<a class="hover:text-primary transition-colors font-medium" href="#">Terms</a>
+<a class="hover:text-primary transition-colors font-medium" href="#">Support</a>
+</div>
+</div>
+</footer>
+
+</body></html>
