@@ -463,7 +463,99 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             )}
                                         </p>
                                         {myApplication?.exists ? (
-                                            <div className="text-sm text-emerald-600 font-bold">You already applied to this mission.</div>
+                                            job.status === 0 ? (
+                                                <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex flex-col gap-3">
+                                                    <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
+                                                        <span className="material-symbols-outlined text-base">lock</span>
+                                                        Stake Locked: {formatEther(userRequiredStake ?? BigInt(0))} AVAX
+                                                    </div>
+                                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                        Your application stake is currently locked in the contract to prevent spam. It will be refunded if you are selected and accept the assignment, or you can withdraw it if the client selects someone else.
+                                                    </p>
+                                                    <button
+                                                        onClick={handleWithdrawApplicationStake}
+                                                        disabled={isTxBusy}
+                                                        className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2"
+                                                    >
+                                                        Withdraw Application & Stake
+                                                    </button>
+                                                </div>
+                                            ) : job.status === 1 ? (
+                                                isSelectedOperator ? (
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
+                                                        <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm mb-2">
+                                                            <span className="material-symbols-outlined text-base">verified</span>
+                                                            You are selected!
+                                                        </div>
+                                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                            Your {formatEther(userRequiredStake ?? BigInt(0))} AVAX stake remains locked until you accept the assignment (which will refund it) or the client reopens the mission.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex flex-col gap-3">
+                                                        <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                                                            <span className="material-symbols-outlined text-base">info</span>
+                                                            Another operator selected
+                                                        </div>
+                                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                            The client has selected someone else. If they do not quickly accept, the client might reopen the mission. Otherwise, you can withdraw your {formatEther(userRequiredStake ?? BigInt(0))} AVAX stake now.
+                                                        </p>
+                                                        <button
+                                                            onClick={handleWithdrawApplicationStake}
+                                                            disabled={isTxBusy}
+                                                            className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2"
+                                                        >
+                                                            Withdraw Stake
+                                                        </button>
+                                                    </div>
+                                                )
+                                            ) : (job.status >= 2 && job.status <= 4) ? (
+                                                isSelectedOperator ? (
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
+                                                        <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm mb-2">
+                                                            <span className="material-symbols-outlined text-base">account_balance_wallet</span>
+                                                            Stake Refunded
+                                                        </div>
+                                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                            Your {formatEther(userRequiredStake ?? BigInt(0))} AVAX initial stake was automatically refunded to your wallet when you accepted the assignment.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex flex-col gap-3">
+                                                        <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                                                            <span className="material-symbols-outlined text-base">info</span>
+                                                            Mission in progress
+                                                        </div>
+                                                        <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                            This mission is now closed to applicants. You may withdraw your {formatEther(userRequiredStake ?? BigInt(0))} AVAX stake.
+                                                        </p>
+                                                        <button
+                                                            onClick={handleWithdrawApplicationStake}
+                                                            disabled={isTxBusy}
+                                                            className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2"
+                                                        >
+                                                            Withdraw Stake
+                                                        </button>
+                                                    </div>
+                                                )
+                                            ) : job.status === 5 ? (
+                                                <div className="bg-gray-500/10 border border-gray-500/20 p-4 rounded-xl flex flex-col gap-3">
+                                                    <div className="flex items-center gap-2 text-gray-400 font-bold text-sm">
+                                                        <span className="material-symbols-outlined text-base">cancel</span>
+                                                        Mission Cancelled
+                                                    </div>
+                                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                        This mission was cancelled. Please withdraw your {formatEther(userRequiredStake ?? BigInt(0))} AVAX stake.
+                                                    </p>
+                                                    <button
+                                                        onClick={handleWithdrawApplicationStake}
+                                                        disabled={isTxBusy}
+                                                        className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2"
+                                                    >
+                                                        Withdraw Stake
+                                                    </button>
+                                                </div>
+                                            ) : null
                                         ) : (
                                             <>
                                                 <textarea
@@ -760,16 +852,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        {/* Success and error messages are handled by the Snackbar */}
-                        {!isClient && myApplication?.exists && (
-                            <button
-                                onClick={handleWithdrawApplicationStake}
-                                disabled={isTxBusy || ((job.status === 1 || job.status === 2) && isSelectedOperator)}
-                                className="py-2 px-4 rounded-lg border border-white/20 text-sm font-bold disabled:opacity-40"
-                            >
-                                Withdraw Application Stake
-                            </button>
-                        )}
+                        {/* Application stake visibility handled above in "Apply as Operator" section */}
                     </div>
                 </Section>
             </div>
