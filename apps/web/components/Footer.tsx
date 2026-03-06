@@ -12,48 +12,48 @@ export default function Footer() {
                         textSize="text-2xl"
                         color="text-gray-900 dark:text-white"
                     />
-                    <h3 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Stay updated</h3>
+                    <h3 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">One Identity.<br /><span className="text-primary italic">Sovereign Work.</span></h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
-                        Sign up for our newsletter and join the growing AVAXVERSE community.
+                        The ultimate professional super app for the sovereign economy. Build your reputation, execute missions, and govern the future.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <input
                             type="email"
-                            placeholder="Enter your email"
+                            placeholder="Stay in the loop"
                             suppressHydrationWarning
-                            className="flex-1 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-white/10 rounded-full px-8 py-4 text-base focus:ring-2 focus:ring-primary outline-none text-gray-900 dark:text-white shadow-inner"
+                            className="flex-1 bg-white dark:bg-gray-800/10 border border-gray-200 dark:border-white/10 rounded-full px-8 py-4 text-base focus:ring-2 focus:ring-primary outline-none text-gray-900 dark:text-white shadow-sm"
                         />
                         <button className="bg-primary text-white px-10 py-4 rounded-full text-base font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                            Sign up
+                            Join Hub
                         </button>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-12 lg:gap-20 text-sm">
                     <div className="flex flex-col gap-6">
-                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Product</h4>
-                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
-                            <a className="hover:text-primary transition-colors cursor-pointer">Download</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Security</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Support</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Feature Requests</a>
+                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Ecosystem</h4>
+                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
+                            <Link href="/explorer" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
+                            <Link href="/governance" className="hover:text-primary transition-colors cursor-pointer">Governance</Link>
+                            <Link href="/jobs" className="hover:text-primary transition-colors cursor-pointer">Mission Hub</Link>
+                            <Link href="/profile" className="hover:text-primary transition-colors cursor-pointer">My Career</Link>
                         </div>
                     </div>
                     <div className="flex flex-col gap-6">
-                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Resources</h4>
-                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
-                            <Link href="/jobs" className="hover:text-primary transition-colors cursor-pointer">Marketplace</Link>
-                            <Link href="/jobs/how-it-works" className="hover:text-primary transition-colors cursor-pointer">How it Works</Link>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Blog</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Docs</a>
+                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Knowledge</h4>
+                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
+                            <Link href="/vision" className="hover:text-primary transition-colors cursor-pointer">Super App Vision</Link>
+                            <a href="https://docs.avaxverse.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Documentation</a>
+                            <a className="hover:text-primary transition-colors cursor-pointer">Whitepaper</a>
+                            <a className="hover:text-primary transition-colors cursor-pointer">Roadmap</a>
                         </div>
                     </div>
                     <div className="flex flex-col gap-6">
-                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Company</h4>
-                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400">
-                            <a className="hover:text-primary transition-colors cursor-pointer">About</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Careers</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">Press Kit</a>
+                        <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Community</h4>
+                        <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
+                            <a href="https://x.com/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
+                            <a className="hover:text-primary transition-colors cursor-pointer">Discord</a>
+                            <a className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
                         </div>
                     </div>
                 </div>

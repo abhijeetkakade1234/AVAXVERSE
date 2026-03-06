@@ -13,11 +13,11 @@ export default function Navbar() {
       <Logo />
 
       <div className="hidden md:flex items-center bg-white/20 backdrop-blur-xl rounded-full px-8 py-3 gap-8 text-sm font-semibold text-white shadow-lg border border-white/20">
-        <Link href="/explorer" className="hover:text-red-500 transition-colors cursor-pointer">Explorer</Link>
-        <Link href="/governance" className="hover:text-red-500 transition-colors cursor-pointer">Governance</Link>
-        <Link href="/jobs" className="hover:text-red-500 transition-colors cursor-pointer">Jobs</Link>
-        <Link href="/profile" className="hover:text-red-500 transition-colors cursor-pointer">Profile</Link>
-        <Link href="/vision" className="hover:text-red-500 transition-colors cursor-pointer">Vision</Link>
+        <Link href="/explorer" className="hover:text-indigo-200 transition-colors cursor-pointer">Explorer</Link>
+        <Link href="/governance" className="hover:text-indigo-200 transition-colors cursor-pointer">Governance</Link>
+        <Link href="/jobs" className="hover:text-indigo-200 transition-colors cursor-pointer">Jobs</Link>
+        <Link href="/profile" className="hover:text-indigo-200 transition-colors cursor-pointer">Profile</Link>
+        <Link href="/vision" className="hover:text-indigo-200 transition-colors cursor-pointer">Vision</Link>
       </div>
 
       <div className="flex items-center gap-3">

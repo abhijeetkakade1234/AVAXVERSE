@@ -2,7 +2,7 @@
 
 import React, { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Zap, ShieldCheck, Search } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Zap } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
 import { useSnackbar } from '@/context/SnackbarContext'
@@ -712,6 +712,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             )}
                                         </div>
                                     )}
+                                    {localError && <p className="text-xs text-red-500 font-bold mt-2">{localError}</p>}
                                 </div>
 
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">

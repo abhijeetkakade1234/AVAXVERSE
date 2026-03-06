@@ -473,10 +473,6 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     return _applicationStakeByJob[jobId][operator];
   }
 
-  function totalJobs() external view returns (uint256) {
-    return _jobs.length;
-  }
-
   function _refundClientCommitment(uint256 jobId, address client) internal {
     uint256 commitment = _clientCommitmentByJob[jobId];
     if (commitment > 0) {

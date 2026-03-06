@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ShieldCheck, Zap, Scale, Clock, Award, Info, HelpCircle, Layout, Code2, Rocket, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ShieldCheck, Zap, Scale, Clock, Info, HelpCircle, Layout, Code2, Rocket, ChevronDown, ChevronUp } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'

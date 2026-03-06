@@ -14,14 +14,14 @@ export default function Hero() {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-6 py-3 rounded-full mb-10 shadow-sm border border-white/30">
               <span className="text-white text-xs font-bold uppercase tracking-widest leading-none">
-                The Avalanche Operating Layer
+                The Decentralized Super App
               </span>
             </div>
 
-            <h1 className="text-5xl md:text-8xl font-bold text-white mb-10 leading-[1.1] tracking-tight drop-shadow-2xl">
-              Your home for identity,<br />
+            <h1 className="text-5xl md:text-8xl font-black text-white mb-10 leading-[1.1] tracking-tighter drop-shadow-2xl">
+              One Identity.<br />
               <span className="bg-gradient-to-r from-white via-indigo-200 to-white/80 bg-clip-text text-transparent">
-                work, and finance.
+                Sovereign Work.
               </span>
             </h1>
 
