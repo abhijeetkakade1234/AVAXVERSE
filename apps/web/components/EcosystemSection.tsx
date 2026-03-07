@@ -36,11 +36,11 @@ export default function EcosystemSection() {
         <>
             <div className="flex flex-col gap-12 min-w-[320px] mr-12">
                 <div className="flex items-center gap-2 bg-white/20 px-6 py-3 rounded-full border border-white/20 backdrop-blur-md w-fit">
-                    <span className="material-symbols-outlined text-white text-base">account_balance_wallet</span>
-                    <span className="text-sm font-bold text-white uppercase tracking-wider">Ecosystem</span>
+                    <span className="material-symbols-outlined text-white text-base">hub</span>
+                    <span className="text-sm font-bold text-white uppercase tracking-wider">Super App Hub</span>
                 </div>
                 <h2 className="text-5xl md:text-7xl font-bold text-white leading-tight">
-                    Every dapp,<br />one ecosystem.
+                    One Core,<br />Infinite spokes.
                 </h2>
             </div>
             {integrations.map((item, index) => (

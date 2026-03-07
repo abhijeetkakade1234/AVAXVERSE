@@ -152,6 +152,13 @@ export const ESCROW_FACTORY_ABI = [
     outputs: [],
   },
   {
+    name: 'onJobCompleted',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'escrowAddr', type: 'address' }],
+    outputs: [],
+  },
+  {
     name: 'getJob',
     type: 'function',
     stateMutability: 'view',
@@ -229,6 +236,20 @@ export const ESCROW_FACTORY_ABI = [
   },
   {
     name: 'requiredStakeFor',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'applicationCooldown',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'lastApplicationAt',
     type: 'function',
     stateMutability: 'view',
     inputs: [{ name: 'user', type: 'address' }],
@@ -379,6 +400,128 @@ export const ESCROW_ABI = [
     stateMutability: 'view',
     inputs: [],
     outputs: [{ type: 'address' }],
+  },
+] as const
+
+export const AVAX_TOKEN_ABI = [
+  {
+    name: 'delegate',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'delegatee', type: 'address' }],
+    outputs: [],
+  },
+  {
+    name: 'delegates',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    name: 'getVotes',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+] as const
+
+export const AVAX_GOVERNOR_ABI = [
+  {
+    name: 'propose',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'targets', type: 'address[]' },
+      { name: 'values', type: 'uint256[]' },
+      { name: 'calldatas', type: 'bytes[]' },
+      { name: 'description', type: 'string' },
+    ],
+    outputs: [{ name: 'proposalId', type: 'uint256' }],
+  },
+  {
+    name: 'execute',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'targets', type: 'address[]' },
+      { name: 'values', type: 'uint256[]' },
+      { name: 'calldatas', type: 'bytes[]' },
+      { name: 'descriptionHash', type: 'bytes32' },
+    ],
+    outputs: [{ name: 'proposalId', type: 'uint256' }],
+  },
+  {
+    name: 'castVote',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'proposalId', type: 'uint256' },
+      { name: 'support', type: 'uint8' },
+    ],
+    outputs: [{ name: 'weight', type: 'uint256' }],
+  },
+  {
+    name: 'state',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'proposalId', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+  {
+    name: 'proposalVotes',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'proposalId', type: 'uint256' }],
+    outputs: [
+      { name: 'againstVotes', type: 'uint256' },
+      { name: 'forVotes', type: 'uint256' },
+      { name: 'abstainVotes', type: 'uint256' },
+    ],
+  },
+  {
+    name: 'votingDelay',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'votingPeriod',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'quorum',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'blockNumber', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'ProposalCreated',
+    type: 'event',
+    inputs: [
+      { name: 'proposalId', type: 'uint256', indexed: false },
+      { name: 'proposer', type: 'address', indexed: false },
+      { name: 'targets', type: 'address[]', indexed: false },
+      { name: 'values', type: 'uint256[]', indexed: false },
+      { name: 'signatures', type: 'string[]', indexed: false },
+      { name: 'calldatas', type: 'bytes[]', indexed: false },
+      { name: 'voteStart', type: 'uint256', indexed: false },
+      { name: 'voteEnd', type: 'uint256', indexed: false },
+      { name: 'description', type: 'string', indexed: false },
+    ],
   },
 ] as const
 

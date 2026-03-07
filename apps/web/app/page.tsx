@@ -14,39 +14,39 @@ export default function Home() {
   const pillars = [
     {
       title: "Self-Sovereign Identity",
-      desc: "Own your digital presence with unique on-chain DIDs and verified credentials.",
+      desc: "IdentityRegistry: Own your digital presence with unique on-chain DIDs and verified credentials that persist across all modules.",
       bg: "bg-primary/20 dark:bg-card-dark-1",
       icon: "fingerprint",
       textColor: "text-white"
     },
     {
       title: "Reputation Assets",
-      desc: "Rise from Apprentice to Legend. Own a permanent, soulbound record of your elite performance and verified expertise.",
+      desc: "Soulbound IDs: Rise from Apprentice to Legend. Own a permanent, non-transferable record of every mission and expertise.",
       bg: "bg-gray-900",
       icon: "verified",
       textColor: "text-white",
       imgPadding: "bg-white/10"
     },
     {
-      title: "Escrow Protection",
-      desc: "Secure mission payments via automated, milestone-bound smart contracts.",
+      title: "Escrow Trust",
+      desc: "State-Machine Escrow: Secure mission payments via automated smart contracts with deterministic state transitions.",
       bg: "bg-card-blue",
       icon: "lock_open",
       textColor: "text-white",
       imgPadding: "bg-white/10"
     },
     {
-      title: "Governor DAO",
-      desc: "Shape the ecosystem's future through decentralized, reputation-weighted voting.",
-      bg: "bg-card-dark-2",
-      icon: "how_to_reg",
+      title: "The Super App Hub",
+      desc: "A Unified Trust Layer: From Job Marketplaces to Arbitration and DeFi, every action compounds into your sovereign on-chain legacy.",
+      bg: "bg-[#7B61FF]",
+      icon: "apps",
       textColor: "text-white"
     },
     {
-      title: "Mission Marketplace",
-      desc: "Connect top-tier talent with ambitious projects in a trustless environment.",
-      bg: "bg-[#5D5FEF]",
-      icon: "layers",
+      title: "Professional Court",
+      desc: "Dispute DAO: A decentralized juror system where community peers resolve mission disputes using reputation-weighted power.",
+      bg: "bg-card-dark-2",
+      icon: "gavel",
       textColor: "text-white"
     }
   ]

@@ -23,7 +23,6 @@ export default function CreateJob() {
     }) as { data: bigint | undefined }
     const tagInputRef = useRef<HTMLInputElement>(null)
 
-    const [submitError, setSubmitError] = useState<string | null>(null)
     const [fieldErrors, setFieldErrors] = useState<{ title?: string; budget?: string }>({})
 
     const [form, setForm] = useState({
@@ -69,11 +68,9 @@ export default function CreateJob() {
 
         setFieldErrors(errors)
         if (Object.keys(errors).length > 0 || parsedBudget === null) {
-            setSubmitError('Please fix the highlighted fields before posting.')
             return
         }
 
-        setSubmitError(null)
         writeContract({
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
@@ -134,7 +131,6 @@ export default function CreateJob() {
                                 value={form.title}
                                 onChange={e => {
                                     setForm(f => ({ ...f, title: e.target.value }))
-                                    setSubmitError(null)
                                     setFieldErrors(prev => ({ ...prev, title: undefined }))
                                 }}
                             />
@@ -198,11 +194,11 @@ export default function CreateJob() {
                         <div className="flex flex-col gap-2">
                             <label className="text-sm font-bold uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark ml-1">Validator Network</label>
                             <select
-                                className="input-glass text-sm outline-none cursor-pointer"
+                                className="input-glass text-sm outline-none cursor-pointer dark:text-white"
                                 value={form.validator}
                                 onChange={e => setForm(f => ({ ...f, validator: e.target.value }))}
                             >
-                                {VALIDATOR_NETWORKS.map(n => <option key={n}>{n}</option>)}
+                                {VALIDATOR_NETWORKS.map(n => <option key={n} className="bg-white dark:bg-surface-dark text-text-light dark:text-white">{n}</option>)}
                             </select>
                         </div>
                     </div>
@@ -245,7 +241,6 @@ export default function CreateJob() {
                                         value={form.budget}
                                         onChange={e => {
                                             setForm(f => ({ ...f, budget: e.target.value }))
-                                            setSubmitError(null)
                                             setFieldErrors(prev => ({ ...prev, budget: undefined }))
                                         }}
                                     />

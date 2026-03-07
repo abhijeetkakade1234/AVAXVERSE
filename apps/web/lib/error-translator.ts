@@ -11,6 +11,13 @@ const ERROR_MESSAGES: Record<string, string> = {
     "EscrowFactory: incorrect funding amount": "The funding amount does not match the mission budget.",
     "EscrowFactory: funding window expired": "The time to fund this mission has passed. Please contact support if this is an error.",
     
+    // Governor reverts
+    "Governor: vote already cast": "You have already cast a vote for this proposal.",
+    "Governor: proposal not active": "This proposal is not currently active for voting.",
+    "Governor: invalid proposal id": "This proposal does not exist.",
+    "Governor: proposal not successful": "This proposal cannot be executed yet. It must pass first.",
+    "Governor: execution failed": "Execution failed. Ensure the underlying contract logic allows this action.",
+    
     // Generic fallbacks
     "user rejected the request": "Transaction was cancelled in your wallet.",
     "insufficient funds": "You don't have enough AVAX to cover the transaction cost or stake."

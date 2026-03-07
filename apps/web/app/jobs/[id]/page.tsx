@@ -2,9 +2,9 @@
 
 import React, { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Zap, ShieldCheck, Search } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Zap } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { formatEther } from 'viem'
+import { formatEther, encodeFunctionData } from 'viem'
 import { useSnackbar } from '@/context/SnackbarContext'
 import { translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES, ACTIVE_CHAIN } from '@/lib/config'
@@ -13,6 +13,8 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'
 import { type Job, type JobApplication } from '../types'
+import { useGovernance } from '@/hooks/useGovernance'
+import { DisputeModal } from '@/components/DisputeModal'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const JOB_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
@@ -35,12 +37,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const { address: connectedAddress } = useAccount()
 
     const [proposalURI, setProposalURI] = useState('')
-    const [showDisputeInput, setShowDisputeInput] = useState(false)
-    const [disputeReasonInput, setDisputeReasonInput] = useState('')
     const [showSubmitInput, setShowSubmitInput] = useState(false)
     const [workUrl, setWorkUrl] = useState('')
-    const [evidenceUrl, setEvidenceUrl] = useState('')
     const [localError, setLocalError] = useState<string | null>(null)
+    const [showDisputeModal, setShowDisputeModal] = useState(false)
+    const [evidenceUrl, setEvidenceUrl] = useState('') // keeping this only for the CounterEvidence UI which still needs it
+    const { propose } = useGovernance()
+
+    const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000))
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(Math.floor(Date.now() / 1000))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [])
 
     const { data: job, isLoading: isJobLoading, refetch: refetchJob } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -161,6 +172,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
     }, [error, showSnackbar])
 
+    const { data: jobCooldown } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'applicationCooldown',
+    }) as { data: bigint | undefined }
+
+    const { data: jobLastApp } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'lastApplicationAt',
+        args: connectedAddress ? [connectedAddress as `0x${string}`] : undefined,
+        query: { enabled: !!connectedAddress },
+    }) as { data: bigint | undefined }
+
     if (isJobLoading) {
         return (
             <main className="min-h-screen bg-background-light dark:bg-background-dark pt-40 flex items-center justify-center">
@@ -187,7 +212,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const escrowStateName: EscrowState = escrowStateIndex !== undefined ? ESCROW_STATES[escrowStateIndex] : 'FUNDED'
     const createdDate = job.createdAt > 0n ? new Date(Number(job.createdAt * 1000n)).toLocaleDateString('en-US') : '-'
 
-
     const statusLabel = job.status === 3 && escrowReady ? `FUNDED / ${escrowStateName}` : jobStatus
     const flowStepIndex = (() => {
         if (job.status === 5) return 0 // cancelled
@@ -203,6 +227,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         if (job.status === 4) return 6 // closed
         return 0
     })()
+
 
     const handleApply = (proposal: string, stake: bigint) => {
         writeContract({
@@ -241,6 +266,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             value: budget,
         })
     }
+
 
     const handleReopenJob = () => {
         writeContract({
@@ -295,13 +321,40 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         })
     }
 
-    const handleRaiseDispute = (reason: string, evidence: string) => {
-        writeContract({
-            address: job.escrow as `0x${string}`,
-            abi: ESCROW_ABI,
-            functionName: 'raiseDispute',
-            args: [reason, evidence],
-        })
+    const handleRaiseDisputeWithProposal = async (reason: string, evidence: string) => {
+        try {
+            // Determine who the caller is to set the intended "winner" for the automated execution if the proposal passes.
+            // A dispute raised by the client asks the DAO to vote YES to release funds back to the client.
+            // A dispute raised by the operator asks the DAO to vote YES to release funds to the operator.
+            const isClientCall = connectedAddress?.toLowerCase() === job?.client.toLowerCase()
+            const expectedWinner = (isClientCall ? job?.client : job?.freelancer) as `0x${string}`
+
+            const description = `DISPUTE-${id}: Resolve dispute for Mission #${id}. Reason: ${reason}`
+            const reasonHash = ('0x' + Buffer.from(description).toString('hex')) as `0x${string}` // Simplistic hash for execution
+
+            // Encode the execution payload for the Governor to execute on the Escrow contract if the proposal passes
+            const calldata = encodeFunctionData({
+                abi: ESCROW_ABI,
+                functionName: 'resolveDispute',
+                args: [expectedWinner, reasonHash]
+            })
+
+            // First send to Governance with the execution payload pointing to the Escrow contract
+            await propose(description, job.escrow as `0x${string}`, calldata)
+
+            // Then raise the dispute on the Escrow contract
+            await writeContract({
+                address: job.escrow as `0x${string}`,
+                abi: ESCROW_ABI,
+                functionName: 'raiseDispute',
+                args: [reason, evidence],
+            })
+
+            showSnackbar('Dispute raised and escalated to DAO Governance successfully!', 'success')
+        } catch (error: unknown) {
+            console.error('Failed to raise dispute and propose:', error)
+            throw new Error(error instanceof Error ? error.message : 'Failed to complete dispute process')
+        }
     }
 
     const handleSubmitCounterEvidence = (evidence: string) => {
@@ -557,7 +610,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                 </div>
                                             ) : null
                                         ) : (
-                                            <>
+                                            <div className="space-y-4">
                                                 <textarea
                                                     className="input-glass w-full resize-none text-sm"
                                                     rows={4}
@@ -568,21 +621,40 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                         setLocalError(null)
                                                     }}
                                                 />
-                                                <button
-                                                    onClick={() => {
-                                                        const proposal = proposalURI.trim()
-                                                        if (!proposal) {
-                                                            setLocalError('Proposal is required to apply.')
-                                                            return
-                                                        }
-                                                        handleApply(proposal, userRequiredStake ?? BigInt(0))
-                                                    }}
-                                                    disabled={isTxBusy}
-                                                    className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40"
-                                                >
-                                                    {isTxBusy ? 'Submitting...' : 'Submit Application'}
-                                                </button>
-                                            </>
+                                                {(() => {
+                                                    const lastApp = jobLastApp ?? 0n
+                                                    const cooldown = jobCooldown ?? 0n
+                                                    const isLocked = lastApp > 0n && BigInt(currentTime) < lastApp + cooldown
+                                                    const remaining = Number(lastApp + cooldown - BigInt(currentTime))
+
+                                                    if (isLocked) {
+                                                        const m = Math.floor(remaining / 60)
+                                                        const s = remaining % 60
+                                                        return (
+                                                            <div className="w-full py-4 rounded-xl bg-primary/5 border border-primary/20 text-text-muted-light dark:text-text-muted-dark font-mono text-center text-sm flex items-center justify-center gap-2">
+                                                                <span className="animate-pulse">⏳</span> Application Cooldown: {m}:{s.toString().padStart(2, '0')}
+                                                            </div>
+                                                        )
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            onClick={() => {
+                                                                const proposal = proposalURI.trim()
+                                                                if (!proposal) {
+                                                                    setLocalError('Proposal is required to apply.')
+                                                                    return
+                                                                }
+                                                                handleApply(proposal, userRequiredStake ?? BigInt(0))
+                                                            }}
+                                                            disabled={isTxBusy}
+                                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse"
+                                                        >
+                                                            {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
+                                                        </button>
+                                                    )
+                                                })()}
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -618,8 +690,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         </button>
                                     </div>
                                 )}
-
-                                {isClient && (
+                                {isClient && job.status === 2 && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                         <h2 className="text-xl font-bold">Fund Escrow</h2>
                                         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
@@ -628,7 +699,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <button
                                             onClick={() => handleFundEscrow(job.budget)}
                                             disabled={isTxBusy || !job.operatorAccepted}
-                                            className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40"
+                                            className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40 shadow-lg shadow-emerald-500/20"
                                         >
                                             {isTxBusy ? 'Funding...' : `Fund ${formatEther(job.budget)} AVAX Escrow`}
                                         </button>
@@ -654,6 +725,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 )}
                             </div>
                         )}
+
 
                         {job.status === 3 && escrowReady && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -712,6 +784,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             )}
                                         </div>
                                     )}
+                                    {localError && <p className="text-xs text-red-500 font-bold mt-2">{localError}</p>}
                                 </div>
 
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
@@ -742,45 +815,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                     )}
 
                                     {(isClient || isSelectedOperator) && escrowStateIndex === 1 && (
-                                        showDisputeInput ? (
-                                            <>
-                                                <textarea
-                                                    className="input-glass w-full resize-none text-sm"
-                                                    rows={2}
-                                                    placeholder="Dispute reason"
-                                                    value={disputeReasonInput}
-                                                    onChange={e => {
-                                                        setDisputeReasonInput(e.target.value)
-                                                        setLocalError(null)
-                                                    }}
-                                                />
-                                                <input
-                                                    className="input-glass w-full text-sm"
-                                                    placeholder="Evidence Link (IPFS/URL)"
-                                                    value={evidenceUrl}
-                                                    onChange={e => setEvidenceUrl(e.target.value)}
-                                                />
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            const reason = disputeReasonInput.trim()
-                                                            if (!reason) {
-                                                                setLocalError('Dispute reason is required.')
-                                                                return
-                                                            }
-                                                            handleRaiseDispute(reason, evidenceUrl.trim())
-                                                        }}
-                                                        disabled={isTxBusy}
-                                                        className="flex-1 py-3 rounded-xl border border-red-500/30 text-red-500 font-bold disabled:opacity-40"
-                                                    >
-                                                        {isTxBusy ? 'Submitting...' : 'Confirm Dispute'}
-                                                    </button>
-                                                    <button onClick={() => setShowDisputeInput(false)} className="px-4 py-3 rounded-xl border border-white/20">Cancel</button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <button onClick={() => setShowDisputeInput(true)} className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold">Raise Dispute</button>
-                                        )
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                If there is an issue with the deliverables, you can raise a dispute to halt the escrow timeline and escalate to arbitration.
+                                            </p>
+                                            <button
+                                                onClick={() => setShowDisputeModal(true)}
+                                                className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold hover:bg-red-500/10 transition-colors"
+                                            >
+                                                Raise Dispute
+                                            </button>
+                                        </div>
                                     )}
 
                                     {escrowStateIndex === 3 && (isClient || isSelectedOperator) && (
@@ -842,6 +887,22 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                     <a href={getDeliverableHref(resolutionReasonHash)!} target="_blank" rel="noopener noreferrer" className="text-primary underline">View Audit Report</a>
                                                 </div>
                                             )}
+                                            {(!resolutionReasonHash && (isClient || isSelectedOperator)) && (
+                                                <div className="pt-2 border-t border-white/10 text-sm space-y-2">
+                                                    <div className="font-bold text-amber-500 mb-2">Community Resolution</div>
+                                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                        If the mediator is unresponsive, or you want the community to decide, you can escalte this case to the DAO or view active governance cases.
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        <Link
+                                                            href="/governance"
+                                                            className="flex-1 flex justify-center items-center py-2 rounded-xl border border-white/20 text-white text-xs font-bold hover:bg-white/5 transition-colors text-center bg-white/5"
+                                                        >
+                                                            Go to Governance Portal
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="text-xs text-text-muted-light dark:text-text-muted-dark">
                                                 {disputeRaiser && <span>Raised by: {shortAddr(disputeRaiser)}</span>}
                                                 {disputedAt && disputedAt > BigInt(0) && <span className="ml-3">At: {new Date(Number(disputedAt) * 1000).toLocaleString('en-US')}</span>}
@@ -855,14 +916,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         {/* Application stake visibility handled above in "Apply as Operator" section */}
                     </div>
                 </Section>
-            </div>
+            </div >
 
             <section className="px-4 md:px-8 py-20">
                 <div className="max-w-7xl mx-auto w-full">
                     <Footer />
                 </div>
             </section>
-        </main>
+
+            <DisputeModal
+                isOpen={showDisputeModal}
+                onClose={() => setShowDisputeModal(false)}
+                onSubmit={handleRaiseDisputeWithProposal}
+                isSubmitting={isTxBusy}
+            />
+        </main >
     )
 }
 

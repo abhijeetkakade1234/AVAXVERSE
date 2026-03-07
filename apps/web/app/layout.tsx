@@ -2,6 +2,7 @@ import "./globals.css"
 import { Web3Provider } from "@/components/Web3Provider"
 import OnboardingRedirect from "@/components/OnboardingRedirect"
 import { SnackbarProvider } from "@/context/SnackbarContext"
+import { ThemeProvider } from "@/components/ThemeProvider"
 
 export const metadata = {
   title: "AVAXVERSE",
@@ -14,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -23,12 +24,14 @@ export default function RootLayout({
         <meta name="theme-color" content="#7B61FF" />
       </head>
       <body className="font-display">
-        <Web3Provider>
-          <SnackbarProvider>
-            <OnboardingRedirect />
-            {children}
-          </SnackbarProvider>
-        </Web3Provider>
+        <ThemeProvider>
+          <Web3Provider>
+            <SnackbarProvider>
+              <OnboardingRedirect />
+              {children}
+            </SnackbarProvider>
+          </Web3Provider>
+        </ThemeProvider>
       </body>
     </html>
   )

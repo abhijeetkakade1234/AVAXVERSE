@@ -38,7 +38,7 @@ interface ProfileLayoutProps {
 }
 
 export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
-    const { address: connectedAddress, isConnected } = useAccount()
+    const { address: connectedAddress } = useAccount()
     const [activeTab, setActiveTab] = useState<'profile' | 'achievements' | 'missions' | 'settings'>('profile')
 
     // 1. Fetch Profile
@@ -119,7 +119,7 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
 
     // 5. Combine everything into a JobData array
     const allJobs: JobData[] = useMemo(() => {
-        if (!jobIds || !jobDetailsResults || !statusResults) return []
+        if (!jobIds || !jobDetailsResults || !statusResults || !targetAddress) return []
         const jobs: JobData[] = []
         let statusIdx = 0
         const idArray = jobIds as bigint[]
@@ -128,21 +128,27 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
             const detailRes = jobDetailsResults[i] as { status: string; result: Record<string, unknown> }
             if (detailRes.status === 'success') {
                 const statusRes = statusResults[statusIdx] as { status: string; result: unknown }
-                // Use a temporary object to avoid spread conflicts and ensure correct typing
                 const jobBase = detailRes.result as unknown as JobData
-                jobs.push({
-                    ...jobBase,
-                    id: Number(idArray[i]),
-                    status: statusRes?.status === 'success' ? (statusRes.result as number) : 0,
-                })
+
+                const isClient = jobBase.client.toLowerCase() === targetAddress.toLowerCase()
+                const isFreelancer = jobBase.freelancer.toLowerCase() === targetAddress.toLowerCase()
+
+                // Only show jobs if they are the client or the confirmed selected freelancer
+                if (isClient || isFreelancer) {
+                    jobs.push({
+                        ...jobBase,
+                        id: Number(idArray[i]),
+                        status: statusRes?.status === 'success' ? (statusRes.result as number) : 0,
+                    })
+                }
                 statusIdx++
             }
         }
         // Sort by newest first
         return jobs.sort((a, b) => Number(b.createdAt - a.createdAt))
-    }, [jobIds, jobDetailsResults, statusResults])
+    }, [jobIds, jobDetailsResults, statusResults, targetAddress])
 
-    if (!isConnected && !targetAddress) {
+    if (!targetAddress) {
         return (
             <>
                 <Navbar />

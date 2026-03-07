@@ -245,6 +245,7 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
       job.client,
       job.freelancer,
       mediator,
+      address(this),
       platformFeeBps,
       feeRecipient
     );
@@ -253,7 +254,7 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     job.escrow = escrowAddr;
     job.status = JobStatus.FUNDED;
 
-    _escrowToJobIndex[escrowAddr] = jobId;
+    _escrowToJobIndex[escrowAddr] = jobId + 1;
     _refundClientCommitment(jobId, job.client);
     _refundOperatorStake(jobId, job.freelancer);
 
@@ -374,20 +375,31 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     emit ApplicationStakeWithdrawn(jobId, msg.sender, amount);
   }
 
-  function onJobCompleted(address escrowAddr) external {
-    uint256 jobId = _escrowToJobIndex[escrowAddr];
-    Job storage job = _jobs[jobId];
+  function onJobCompleted(address escrowAddr) external nonReentrant {
+    uint256 jobIdPlusOne = _escrowToJobIndex[escrowAddr];
+    require(jobIdPlusOne > 0, 'EscrowFactory: escrow not tracked');
+    uint256 jobId = jobIdPlusOne - 1;
 
-    require(msg.sender == job.escrow || msg.sender == owner(), 'EscrowFactory: unauthorized');
-    require(job.status == JobStatus.FUNDED, 'EscrowFactory: job not funded');
+    require(jobId < _jobs.length, 'EscrowFactory: invalid job index');
+    Job storage job = _jobs[jobId];
+    require(job.escrow == escrowAddr, 'EscrowFactory: address mismatch');
+
     require(
-      Escrow(payable(escrowAddr)).getState() == IEscrow.State.RELEASED,
-      'EscrowFactory: escrow not released'
+      msg.sender == job.escrow ||
+        msg.sender == owner() ||
+        msg.sender == job.client ||
+        msg.sender == job.freelancer,
+      'EscrowFactory: unauthorized completion'
+    );
+    require(job.status == JobStatus.FUNDED, 'EscrowFactory: job not in funded state');
+    require(
+      IEscrow(payable(escrowAddr)).getState() == IEscrow.State.RELEASED,
+      'EscrowFactory: funds not yet released'
     );
 
     job.status = JobStatus.CLOSED;
-    reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE);
-    identityRegistry.incrementReputation(job.freelancer, 25);
+    try reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE) {} catch {}
+    try identityRegistry.incrementReputation(job.freelancer, 25) {} catch {}
     emit JobCompleted(jobId, escrowAddr);
   }
 
@@ -471,10 +483,6 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
   function getApplicationStake(uint256 jobId, address operator) external view returns (uint256) {
     return _applicationStakeByJob[jobId][operator];
-  }
-
-  function totalJobs() external view returns (uint256) {
-    return _jobs.length;
   }
 
   function _refundClientCommitment(uint256 jobId, address client) internal {
