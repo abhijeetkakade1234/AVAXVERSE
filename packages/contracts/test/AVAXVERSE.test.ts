@@ -150,7 +150,7 @@ describe('EscrowFactory -> Escrow', () => {
     // Status is SELECTED (1), but fundEscrow requires ACCEPTED (2)
     await expect(
         factory.connect(alice).fundEscrow(0n, { value: budget })
-    ).to.be.revertedWith('EscrowFactory: job not accepted')
+    ).to.be.revertedWithCustomError(factory, 'StateMismatch')
   })
 
   it('full happy path: create -> apply -> select -> accept -> fund -> submit -> approve', async () => {
@@ -288,6 +288,6 @@ describe('EscrowFactory -> Escrow', () => {
 
     await expect(
       factory.connect(bob).withdrawApplicationStake(jobId),
-    ).to.be.revertedWith('EscrowFactory: selected operator stake locked')
+    ).to.be.revertedWithCustomError(factory, 'StakeLocked')
   })
 })
