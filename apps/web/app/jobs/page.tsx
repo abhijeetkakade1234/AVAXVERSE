@@ -16,7 +16,9 @@ const SPECIALIZATIONS = ['All', 'DeFi', 'Subnets', 'Security', 'Infrastructure',
 const REWARD_RANGES = ['Any Reward', '0-10 AVAX', '10-100 AVAX', '100+ AVAX']
 const STATUS_FILTERS = ['All Statuses', 'Open', 'In Progress', 'Completed']
 
-export default function JobsPage() {
+import { Suspense } from 'react'
+
+function JobsContent() {
     const { address, isConnected } = useAccount()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -163,6 +165,18 @@ export default function JobsPage() {
                 </div>
             </section>
         </main>
+    )
+}
+
+export default function JobsPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        }>
+            <JobsContent />
+        </Suspense>
     )
 }
 
