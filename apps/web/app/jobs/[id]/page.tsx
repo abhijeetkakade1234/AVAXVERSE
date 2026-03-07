@@ -178,6 +178,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         functionName: 'applicationCooldown',
     }) as { data: bigint | undefined }
 
+    const { data: applicationStakeWei } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'applicationStakeWei',
+    }) as { data: bigint | undefined }
+
     const { data: jobLastApp } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
@@ -511,7 +517,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <h2 className="text-xl font-bold">Apply as Operator</h2>
                                         <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
                                             Application stake: {formatEther(userRequiredStake ?? BigInt(0))} AVAX.
-                                            {userRequiredStake !== undefined && userRequiredStake < (userRequiredStake * BigInt(10) / BigInt(1)) && (
+                                            {userRequiredStake !== undefined && (applicationStakeWei ?? BigInt(0)) > userRequiredStake && (
                                                 <span className="text-emerald-500 font-bold ml-1"> (Reputation Discount Applied!)</span>
                                             )}
                                         </p>
@@ -968,8 +974,10 @@ function ApplicantRow({
         args: [operator as `0x${string}`],
     }) as { data: bigint[] | undefined }
 
+    if (application && !application.exists) return null
+
     return (
-        <div className="rounded-xl border border-white/20 dark:border-white/10 p-4 space-y-2">
+        <div className="rounded-xl border border-white/20 dark:border-white/10 p-4 space-y-2 animate-enter">
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <Link href={`/profile/${operator}`} className="font-bold text-primary hover:underline">

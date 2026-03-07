@@ -33,6 +33,8 @@ interface IEscrow {
   function refund() external;
   function autoApprove() external;
   function getState() external view returns (State);
+  function withdraw() external;
+  function resolveByTimeout() external;
 
   // View functions for tests/UI
   function disputeEvidenceURI() external view returns (string memory);
