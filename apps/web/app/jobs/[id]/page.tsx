@@ -154,8 +154,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
+    const explorerBase = ACTIVE_CHAIN.blockExplorers?.default?.url ?? 'https://testnet.snowtrace.io'
+
     useEffect(() => {
-        if (isSuccess) {
+        if (isSuccess && hash) {
             showSnackbar('Mission update successful!', 'success')
             refetchJob()
             refetchApplicants()
@@ -164,7 +166,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             refetchDeliverable()
             refetchDisputeReason()
         }
-    }, [isSuccess, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchJob, refetchMyApplication, showSnackbar])
+    }, [isSuccess, hash, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchJob, refetchMyApplication, showSnackbar])
 
     useEffect(() => {
         if (error) {
@@ -410,6 +412,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                     <div className="text-xs uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark">Status</div>
                                     <div className="font-bold text-primary">{statusLabel}</div>
                                     <div className="text-2xl font-black mt-2">{formatEther(job.budget)} AVAX</div>
+                                    {escrowReady && (
+                                        <a
+                                            href={`${explorerBase}/address/${job.escrow}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                                        >
+                                            <ExternalLink size={10} /> View Escrow on Snowtrace
+                                        </a>
+                                    )}
+                                    {hash && (
+                                        <a
+                                            href={`${explorerBase}/tx/${hash}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-xs text-emerald-500 hover:underline mt-1"
+                                        >
+                                            <ExternalLink size={10} className="inline mr-1" />Last Tx on Snowtrace
+                                        </a>
+                                    )}
                                 </div>
                             </div>
 
