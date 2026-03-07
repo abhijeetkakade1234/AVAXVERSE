@@ -31,6 +31,17 @@ contract Escrow is IEscrow, ReentrancyGuard {
   uint256 public _submittedAt;
   uint256 public constant REVIEW_TIMEOUT = 7 days;
   uint256 public constant DISPUTE_RESPONSE_WINDOW = 3 days;
+  uint256 public constant DISPUTE_RECOVERY_TIMEOUT = 14 days;
+
+  mapping(address => uint256) public pendingWithdrawals;
+
+  event FundsWithdrawn(address indexed user, uint256 amount);
+  event WithdrawalFailed(address indexed user, uint256 amount);
+  event DisputeTimeoutResolved(
+    address indexed caller,
+    uint256 clientRefund,
+    uint256 freelancerPayout
+  );
 
   string public _disputeEvidenceURI;
   string public _counterEvidenceURI;
@@ -127,6 +138,51 @@ contract Escrow is IEscrow, ReentrancyGuard {
     _releaseFunds(winner);
   }
 
+  /**
+   * @notice If the mediator fails to resolve the dispute within 14 days, anyone can call this
+   * to split the funds 50/50 and prevent permanent lock.
+   */
+  function resolveByTimeout() external override nonReentrant {
+    _requireState(State.DISPUTED);
+    require(
+      block.timestamp > disputedAt + DISPUTE_RECOVERY_TIMEOUT,
+      'Escrow: recovery timeout not reached'
+    );
+
+    uint256 total = address(this).balance;
+    uint256 half = total / 2;
+    uint256 otherHalf = total - half;
+
+    _state = State.RELEASED;
+
+    _safeTransfer(client, half);
+    _safeTransfer(freelancer, otherHalf);
+
+    emit DisputeTimeoutResolved(msg.sender, half, otherHalf);
+
+    // Notify factory
+    if (factory != address(0)) {
+      (bool success, ) = factory.call(
+        abi.encodeWithSignature('onJobCompleted(address)', address(this))
+      );
+      success;
+    }
+  }
+
+  /**
+   * @notice Allows users to withdraw funds that failed to transfer automatically.
+   */
+  function withdraw() external override nonReentrant {
+    uint256 amount = pendingWithdrawals[msg.sender];
+    require(amount > 0, 'Escrow: no funds to withdraw');
+
+    pendingWithdrawals[msg.sender] = 0;
+    (bool ok, ) = msg.sender.call{value: amount}('');
+    require(ok, 'Escrow: withdraw failed');
+
+    emit FundsWithdrawn(msg.sender, amount);
+  }
+
   /// @notice Mediator resolves dispute by splitting funds.
   function resolveDisputeSplit(
     uint256 clientShareBps,
@@ -197,9 +253,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
     _state = State.REFUNDED;
     uint256 amount = address(this).balance;
-    (bool ok, ) = client.call{value: amount}('');
-    require(ok, 'Escrow: refund failed');
-
+    _safeTransfer(client, amount);
     emit Refunded(client, amount);
   }
 
@@ -240,21 +294,30 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
     if (fee > 0 && feeRecipient != address(0)) {
       (bool feeOk, ) = feeRecipient.call{value: fee}('');
-      require(feeOk, 'Escrow: fee transfer failed');
+      if (!feeOk) {
+        pendingWithdrawals[feeRecipient] += fee;
+        emit WithdrawalFailed(feeRecipient, fee);
+      }
     }
 
-    (bool ok, ) = winner.call{value: payout}('');
-    require(ok, 'Escrow: payout failed');
-
+    _safeTransfer(winner, payout);
     emit FundsReleased(winner, payout);
 
-    // Notify factory for reputation. This is a low-level call to ensure
-    // that if the factory reverts (e.g. gas issues), the funds release still completes.
+    // Notify factory for reputation.
     if (factory != address(0)) {
       (bool success, ) = factory.call(
         abi.encodeWithSignature('onJobCompleted(address)', address(this))
       );
-      success; // suppress unused variable warning
+      success;
+    }
+  }
+
+  function _safeTransfer(address to, uint256 amount) internal {
+    if (amount == 0) return;
+    (bool ok, ) = to.call{value: amount}('');
+    if (!ok) {
+      pendingWithdrawals[to] += amount;
+      emit WithdrawalFailed(to, amount);
     }
   }
 }

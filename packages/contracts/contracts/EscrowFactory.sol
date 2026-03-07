@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import './Escrow.sol';
 import './interfaces/IIdentityRegistry.sol';
@@ -15,22 +17,46 @@ import './interfaces/IReputationToken.sol';
  *         - timeout-based penalties
  *         - blocklist + penalty points
  */
-contract EscrowFactory is Ownable, ReentrancyGuard {
-  uint256 public platformFeeBps = 250; // 2.5%
+contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard {
+  uint256 public platformFeeBps; // 250 = 2.5%
   address public feeRecipient;
   address public mediator;
 
-  // --- Anti-fraud config ---
-  uint256 public clientCommitmentWei = 0.01 ether;
-  uint256 public applicationStakeWei = 0.001 ether;
-  uint256 public applicationCooldownSec = 10 minutes;
-  uint256 public clientCancelGraceSec = 30 minutes;
-  uint256 public selectionTimeoutSec = 24 hours;
-  uint256 public fundingTimeoutSec = 24 hours;
-  uint256 public autoBlockPenaltyThreshold = 100;
+  error Unauthorized();
+  error InvalidBudget();
+  error JobNotOpen();
+  error AlreadyApplied();
+  error CooldownActive();
+  error InvalidStake();
+  error NotSelected();
+  error AlreadyAccepted();
+  error NotFunded();
+  error ProfileRequired();
+  error NotMediator();
+  error StakeLocked();
+  error EscrowNotTracked();
+  error AddressMismatch();
+  error StateMismatch();
+  error FeeTooHigh();
+  error InvalidTitle();
+  error WindowExpired();
+  error NoStake();
+  error Blocked();
+  error WithdrawFailed();
+  error ApplicationNotFound();
+  error JobNotFound();
 
-  IIdentityRegistry public immutable identityRegistry;
-  IReputationToken public immutable reputationToken;
+  // --- Anti-fraud config ---
+  uint256 public clientCommitmentWei;
+  uint256 public applicationStakeWei;
+  uint256 public applicationCooldownSec;
+  uint256 public clientCancelGraceSec;
+  uint256 public selectionTimeoutSec;
+  uint256 public fundingTimeoutSec;
+  uint256 public autoBlockPenaltyThreshold;
+
+  IIdentityRegistry public identityRegistry;
+  IReputationToken public reputationToken;
 
   string private constant ACHIEVEMENT_JOB_COMPLETE = 'ipfs://avaxverse/achievement/job-complete';
 
@@ -64,7 +90,10 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   Job[] private _jobs;
   mapping(address => uint256) private _escrowToJobIndex;
   mapping(address => uint256[]) private _userJobs;
-  mapping(address => mapping(uint256 => bool)) private _userHasJob;
+
+  event FundsWithdrawn(address indexed user, uint256 amount);
+  event WithdrawalFailed(address indexed user, uint256 amount);
+  event ReputationUpdateFailed(uint256 indexed jobId, address indexed user, string reason);
 
   mapping(uint256 => address[]) private _jobApplicants;
   mapping(uint256 => mapping(address => Application)) private _applications;
@@ -78,6 +107,10 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   mapping(address => uint256) public lastApplicationAt;
   mapping(address => bool) public blocked;
   mapping(address => uint256) public penaltyPoints;
+
+  // Append new variables at the end
+  mapping(address => uint256) public pendingWithdrawals;
+  mapping(address => mapping(uint256 => bool)) private _userHasJob;
 
   event JobCreated(
     uint256 indexed jobId,
@@ -108,29 +141,44 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   );
   event ConfigUpdated(uint256 feeBps, address feeRecipient, address mediator);
 
-  constructor(
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(
     address _identityRegistry,
     address _reputationToken,
     address _feeRecipient,
     address _mediator
-  ) Ownable(msg.sender) {
+  ) public initializer {
+    __Ownable_init(msg.sender);
     identityRegistry = IIdentityRegistry(_identityRegistry);
     reputationToken = IReputationToken(_reputationToken);
     feeRecipient = _feeRecipient;
     mediator = _mediator;
+
+    platformFeeBps = 250;
+    clientCommitmentWei = 0.01 ether;
+    applicationStakeWei = 0.001 ether;
+    applicationCooldownSec = 10 minutes;
+    clientCancelGraceSec = 30 minutes;
+    selectionTimeoutSec = 24 hours;
+    fundingTimeoutSec = 24 hours;
+    autoBlockPenaltyThreshold = 100;
   }
 
   /**
    * @dev Dynamic stake: high reputation = lower stake.
-   * Formula: baseStake * 1000 / (100 + rep)
+   * Formula: baseStake * 100 / (100 + rep)
    */
   function requiredStakeFor(address user) public view returns (uint256) {
-    uint256 rep = IReputationToken(reputationToken).getScore(user);
-    return (applicationStakeWei * 1000) / (100 + rep);
+    uint256 rep = identityRegistry.getProfile(user).reputationScore;
+    return (applicationStakeWei * 100) / (100 + rep);
   }
 
   modifier notBlocked(address user) {
-    require(!blocked[user], 'EscrowFactory: user blocked');
+    if (blocked[user]) revert Blocked();
     _;
   }
 
@@ -138,13 +186,13 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     string calldata title,
     uint256 budget,
     string calldata metadataURI
-  ) external payable notBlocked(msg.sender) returns (uint256 jobId) {
-    require(identityRegistry.hasProfile(msg.sender), 'EscrowFactory: client must have profile');
-    require(bytes(title).length > 0, 'EscrowFactory: title required');
-    require(budget > 0, 'EscrowFactory: budget must be > 0');
-    require(msg.value == clientCommitmentWei, 'EscrowFactory: invalid commitment deposit');
+  ) external payable notBlocked(msg.sender) nonReentrant {
+    if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
+    if (bytes(title).length == 0) revert InvalidTitle();
+    if (budget == 0) revert InvalidBudget();
+    if (msg.value != clientCommitmentWei) revert InvalidStake();
 
-    jobId = _jobs.length;
+    uint256 jobId = _jobs.length;
     _jobs.push(
       Job({
         escrow: address(0),
@@ -168,21 +216,19 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     uint256 jobId,
     string calldata proposalURI
   ) external payable notBlocked(msg.sender) nonReentrant {
+    if (jobId >= _jobs.length) revert JobNotFound();
     Job storage job = _jobs[jobId];
-    require(job.status == JobStatus.OPEN, 'EscrowFactory: job not open');
-    require(msg.sender != job.client, 'EscrowFactory: client cannot apply');
-    require(identityRegistry.hasProfile(msg.sender), 'EscrowFactory: operator must have profile');
-    require(!_applications[jobId][msg.sender].exists, 'EscrowFactory: already applied');
-    require(bytes(proposalURI).length > 0, 'EscrowFactory: proposal required');
+    if (job.status != JobStatus.OPEN) revert JobNotOpen();
+    if (msg.sender == job.client) revert Unauthorized();
+    if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
+    if (_applications[jobId][msg.sender].exists) revert AlreadyApplied();
+    if (bytes(proposalURI).length == 0) revert('URI required');
 
     uint256 requiredStake = requiredStakeFor(msg.sender);
-    require(msg.value == requiredStake, 'EscrowFactory: invalid application stake');
+    if (msg.value != requiredStake) revert InvalidStake();
 
     uint256 last = lastApplicationAt[msg.sender];
-    require(
-      last == 0 || block.timestamp >= last + applicationCooldownSec,
-      'EscrowFactory: application cooldown active'
-    );
+    if (last != 0 && block.timestamp < last + applicationCooldownSec) revert CooldownActive();
 
     lastApplicationAt[msg.sender] = block.timestamp;
     _applications[jobId][msg.sender] = Application({
@@ -199,10 +245,10 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
   function selectOperator(uint256 jobId, address operator) external notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
-    require(msg.sender == job.client, 'EscrowFactory: only client');
-    require(job.status == JobStatus.OPEN, 'EscrowFactory: job not open');
-    require(!blocked[operator], 'EscrowFactory: operator blocked');
-    require(_applications[jobId][operator].exists, 'EscrowFactory: operator did not apply');
+    if (msg.sender != job.client) revert Unauthorized();
+    if (job.status != JobStatus.OPEN) revert JobNotOpen();
+    if (blocked[operator]) revert Unauthorized();
+    if (!_applications[jobId][operator].exists) revert ApplicationNotFound();
 
     job.freelancer = operator;
     job.status = JobStatus.SELECTED;
@@ -216,8 +262,8 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
   function acceptAssignment(uint256 jobId) external notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
-    require(job.status == JobStatus.SELECTED, 'EscrowFactory: job not selected');
-    require(msg.sender == job.freelancer, 'EscrowFactory: only selected operator');
+    if (job.status != JobStatus.SELECTED) revert StateMismatch();
+    if (msg.sender != job.freelancer) revert Unauthorized();
 
     job.operatorAccepted = true;
     job.status = JobStatus.ACCEPTED;
@@ -229,16 +275,13 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     uint256 jobId
   ) external payable notBlocked(msg.sender) nonReentrant returns (address escrowAddr) {
     Job storage job = _jobs[jobId];
-    require(msg.sender == job.client, 'EscrowFactory: only client');
-    require(job.status == JobStatus.ACCEPTED, 'EscrowFactory: job not accepted');
-    require(job.freelancer != address(0), 'EscrowFactory: no operator selected');
-    require(msg.value == job.budget, 'EscrowFactory: incorrect funding amount');
+    if (msg.sender != job.client) revert Unauthorized();
+    if (job.status != JobStatus.ACCEPTED) revert StateMismatch();
+    if (job.freelancer == address(0)) revert Unauthorized();
+    if (msg.value != job.budget) revert InvalidStake();
 
     if (_acceptedAt[jobId] > 0) {
-      require(
-        block.timestamp <= _acceptedAt[jobId] + fundingTimeoutSec,
-        'EscrowFactory: funding window expired'
-      );
+      if (block.timestamp > _acceptedAt[jobId] + fundingTimeoutSec) revert WindowExpired();
     }
 
     Escrow escrow = new Escrow{value: msg.value}(
@@ -263,11 +306,8 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
 
   function cancelOpenJob(uint256 jobId) external notBlocked(msg.sender) nonReentrant {
     Job storage job = _jobs[jobId];
-    require(msg.sender == job.client, 'EscrowFactory: only client');
-    require(
-      job.status == JobStatus.OPEN || job.status == JobStatus.SELECTED,
-      'EscrowFactory: cannot cancel'
-    );
+    if (msg.sender != job.client) revert Unauthorized();
+    if (job.status != JobStatus.OPEN && job.status != JobStatus.SELECTED) revert StateMismatch();
 
     job.status = JobStatus.CANCELLED;
 
@@ -289,9 +329,9 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   /// @notice Immediate reopen without slash (manual recovery path).
   function reopenJob(uint256 jobId) external notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
-    require(msg.sender == job.client, 'EscrowFactory: only client');
-    require(job.status == JobStatus.SELECTED, 'EscrowFactory: job not selected');
-    require(!job.operatorAccepted, 'EscrowFactory: already accepted');
+    if (msg.sender != job.client) revert Unauthorized();
+    if (job.status != JobStatus.SELECTED) revert StateMismatch();
+    if (job.operatorAccepted) revert AlreadyAccepted();
 
     job.freelancer = address(0);
     job.status = JobStatus.OPEN;
@@ -305,14 +345,11 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
     uint256 jobId
   ) external nonReentrant notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
-    require(msg.sender == job.client, 'EscrowFactory: only client');
-    require(job.status == JobStatus.SELECTED, 'EscrowFactory: job not selected');
-    require(!job.operatorAccepted, 'EscrowFactory: already accepted');
-    require(_selectedAt[jobId] > 0, 'EscrowFactory: no selection timestamp');
-    require(
-      block.timestamp > _selectedAt[jobId] + selectionTimeoutSec,
-      'EscrowFactory: selection timeout not reached'
-    );
+    if (msg.sender != job.client) revert Unauthorized();
+    if (job.status != JobStatus.SELECTED) revert StateMismatch();
+    if (job.operatorAccepted) revert AlreadyAccepted();
+    if (_selectedAt[jobId] == 0) revert StateMismatch();
+    if (block.timestamp <= _selectedAt[jobId] + selectionTimeoutSec) revert WindowExpired();
 
     address prevOperator = job.freelancer;
     uint256 stake = _applicationStakeByJob[jobId][prevOperator];
@@ -334,14 +371,11 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   /// @notice If client does not fund in time after acceptance, operator can cancel and claim commitment.
   function timeoutCancelByOperator(uint256 jobId) external nonReentrant notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
-    require(job.status == JobStatus.ACCEPTED, 'EscrowFactory: job not accepted');
-    require(job.operatorAccepted, 'EscrowFactory: operator not accepted');
-    require(msg.sender == job.freelancer, 'EscrowFactory: only selected operator');
-    require(_acceptedAt[jobId] > 0, 'EscrowFactory: no acceptance timestamp');
-    require(
-      block.timestamp > _acceptedAt[jobId] + fundingTimeoutSec,
-      'EscrowFactory: funding timeout not reached'
-    );
+    if (job.status != JobStatus.ACCEPTED) revert StateMismatch();
+    if (!job.operatorAccepted) revert StateMismatch();
+    if (msg.sender != job.freelancer) revert Unauthorized();
+    if (_acceptedAt[jobId] == 0) revert StateMismatch();
+    if (block.timestamp <= _acceptedAt[jobId] + fundingTimeoutSec) revert WindowExpired();
 
     uint256 commitment = _clientCommitmentByJob[jobId];
     if (commitment > 0) {
@@ -357,7 +391,7 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   function withdrawApplicationStake(uint256 jobId) external nonReentrant notBlocked(msg.sender) {
     Job storage job = _jobs[jobId];
     uint256 amount = _applicationStakeByJob[jobId][msg.sender];
-    require(amount > 0, 'EscrowFactory: no stake');
+    if (amount == 0) revert NoStake();
 
     bool canWithdraw;
     if (job.status == JobStatus.OPEN) {
@@ -368,47 +402,62 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
       canWithdraw = true;
     }
 
-    require(canWithdraw, 'EscrowFactory: selected operator stake locked');
+    if (!canWithdraw) revert StakeLocked();
 
     _applicationStakeByJob[jobId][msg.sender] = 0;
+    _applications[jobId][msg.sender].exists = false; // Fix: Mark application as removed
     _safeTransfer(msg.sender, amount);
     emit ApplicationStakeWithdrawn(jobId, msg.sender, amount);
   }
 
   function onJobCompleted(address escrowAddr) external nonReentrant {
     uint256 jobIdPlusOne = _escrowToJobIndex[escrowAddr];
-    require(jobIdPlusOne > 0, 'EscrowFactory: escrow not tracked');
+    if (jobIdPlusOne == 0) revert EscrowNotTracked();
     uint256 jobId = jobIdPlusOne - 1;
 
-    require(jobId < _jobs.length, 'EscrowFactory: invalid job index');
     Job storage job = _jobs[jobId];
-    require(job.escrow == escrowAddr, 'EscrowFactory: address mismatch');
+    if (job.escrow != escrowAddr) revert AddressMismatch();
 
-    require(
-      msg.sender == job.escrow ||
-        msg.sender == owner() ||
-        msg.sender == job.client ||
-        msg.sender == job.freelancer,
-      'EscrowFactory: unauthorized completion'
-    );
-    require(job.status == JobStatus.FUNDED, 'EscrowFactory: job not in funded state');
-    require(
-      IEscrow(payable(escrowAddr)).getState() == IEscrow.State.RELEASED,
-      'EscrowFactory: funds not yet released'
-    );
+    if (
+      msg.sender != job.escrow &&
+      msg.sender != owner() &&
+      msg.sender != job.client &&
+      msg.sender != job.freelancer
+    ) revert Unauthorized();
+
+    if (job.status != JobStatus.FUNDED) revert StateMismatch();
+    if (IEscrow(payable(escrowAddr)).getState() != IEscrow.State.RELEASED) revert StateMismatch();
 
     job.status = JobStatus.CLOSED;
-    try reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE) {} catch {}
-    try identityRegistry.incrementReputation(job.freelancer, 25) {} catch {}
+    try reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE) {} catch {
+      emit ReputationUpdateFailed(jobId, job.freelancer, 'Mint fail');
+    }
+    try identityRegistry.incrementReputation(job.freelancer, 25) {} catch {
+      emit ReputationUpdateFailed(jobId, job.freelancer, 'Rep fail');
+    }
     emit JobCompleted(jobId, escrowAddr);
   }
 
   function setConfig(uint256 feeBps, address _feeRecipient, address _mediator) external onlyOwner {
-    require(feeBps <= 1000, 'EscrowFactory: fee too high');
+    if (feeBps > 1000) revert FeeTooHigh();
     platformFeeBps = feeBps;
     feeRecipient = _feeRecipient;
     mediator = _mediator;
     emit ConfigUpdated(feeBps, _feeRecipient, _mediator);
+  }
+
+  /**
+   * @notice Allows users to withdraw any funds that failed to transfer automatically.
+   */
+  function withdraw() external nonReentrant {
+    uint256 amount = pendingWithdrawals[msg.sender];
+    if (amount == 0) revert NoStake();
+
+    pendingWithdrawals[msg.sender] = 0;
+    (bool ok, ) = msg.sender.call{value: amount}('');
+    if (!ok) revert WithdrawFailed();
+
+    emit FundsWithdrawn(msg.sender, amount);
   }
 
   function setAntiFraudConfig(
@@ -520,7 +569,10 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   function _safeTransfer(address to, uint256 amount) internal {
     if (amount == 0) return;
     (bool ok, ) = to.call{value: amount}('');
-    require(ok, 'EscrowFactory: transfer failed');
+    if (!ok) {
+      pendingWithdrawals[to] += amount;
+      emit WithdrawalFailed(to, amount);
+    }
   }
 
   function _trackUserJob(address user, uint256 jobId) internal {
@@ -529,4 +581,6 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
       _userJobs[user].push(jobId);
     }
   }
+
+  function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

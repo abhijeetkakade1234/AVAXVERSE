@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import './interfaces/IIdentityRegistry.sol';
 import './interfaces/IAVAXToken.sol';
@@ -12,11 +14,20 @@ import './interfaces/IAVAXToken.sol';
  *         Each address can register exactly one profile.
  *         Reputation scores are updated by authorized updaters (e.g., Escrow or ReputationToken contracts).
  */
-contract IdentityRegistry is IIdentityRegistry, Ownable {
+contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeable, UUPSUpgradeable {
   // --- State ---
   mapping(address => Profile) private _profiles;
   mapping(address => bool) private _authorizedUpdaters;
   IAVAXToken public avaxToken;
+
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize() public initializer {
+    __Ownable_init(msg.sender);
+  }
 
   // --- Modifiers ---
   modifier onlyRegistered(address user) {
@@ -31,9 +42,6 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
     );
     _;
   }
-
-  // --- Constructor ---
-  constructor() Ownable(msg.sender) {}
 
   // --- External Functions ---
 
@@ -143,4 +151,6 @@ contract IdentityRegistry is IIdentityRegistry, Ownable {
   function _buildDID(address user) internal pure returns (string memory) {
     return string.concat('did:avax:', Strings.toHexString(uint160(user), 20));
   }
+
+  function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

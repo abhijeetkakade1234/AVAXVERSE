@@ -2,18 +2,33 @@
 echo 🚀 Starting AVAXVERSE Ecosystem...
 
 :: 1. Start Hardhat Node in a new window
-echo 💎 Starting Hardhat Node...
-start "AVAXVERSE-Node" cmd /c "cd packages/contracts && call npx hardhat node"
-
-:: 2. Wait for node to initialize
-echo ⏳ Waiting for node to start...
-timeout /t 10 /nobreak > nul
-
-:: 3. Deploy Contracts
-echo 📜 Deploying Smart Contracts...
-cd packages/contracts && call npx hardhat run scripts/deploy.ts --network localhost
+echo 💎 Check if Hardhat Node is running...
+netstat -ano | findstr :8545 > nul
 if %errorlevel% neq 0 (
-    echo ❌ Deployment failed!
+    echo 🚀 Starting Hardhat Node...
+    start "AVAXVERSE-Node" cmd /c "cd packages/contracts && call npx hardhat node"
+    echo ⏳ Waiting for node to start...
+    timeout /t 10 /nobreak > nul
+) else (
+    echo 💎 Hardhat Node is already running.
+)
+
+:: 2. Choose Deployment Mode
+echo.
+echo [1] Deploy Fresh Contracts (WIPE ALL LOCAL DATA)
+echo [2] Upgrade Contract Logic (KEEP EXISTING DATA)
+set /p mode="Choose deployment mode [1 or 2]: "
+
+if "%mode%"=="2" (
+    echo 📜 Upgrading Smart Contracts...
+    cd packages/contracts && call npx hardhat run scripts/upgrade.ts --network localhost
+) else (
+    echo 📜 Deploying Fresh Smart Contracts...
+    cd packages/contracts && call npx hardhat run scripts/deploy.ts --network localhost
+)
+
+if %errorlevel% neq 0 (
+    echo ❌ Operation failed!
     pause
     exit /b %errorlevel%
 )

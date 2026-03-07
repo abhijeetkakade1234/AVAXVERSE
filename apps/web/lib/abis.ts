@@ -266,6 +266,23 @@ export const ESCROW_FACTORY_ABI = [
       { name: 'metadataURI', type: 'string', indexed: false },
     ],
   },
+  { name: 'Unauthorized', type: 'error', inputs: [] },
+  { name: 'InvalidBudget', type: 'error', inputs: [] },
+  { name: 'JobNotOpen', type: 'error', inputs: [] },
+  { name: 'AlreadyApplied', type: 'error', inputs: [] },
+  { name: 'CooldownActive', type: 'error', inputs: [] },
+  { name: 'InvalidStake', type: 'error', inputs: [] },
+  { name: 'NotSelected', type: 'error', inputs: [] },
+  { name: 'StakeLocked', type: 'error', inputs: [] },
+  { name: 'NoStake', type: 'error', inputs: [] },
+  { name: 'Blocked', type: 'error', inputs: [] },
+  { name: 'WithdrawFailed', type: 'error', inputs: [] },
+  { name: 'ApplicationNotFound', type: 'error', inputs: [] },
+  { name: 'JobNotFound', type: 'error', inputs: [] },
+  { name: 'EscrowNotTracked', type: 'error', inputs: [] },
+  { name: 'AddressMismatch', type: 'error', inputs: [] },
+  { name: 'StateMismatch', type: 'error', inputs: [] },
+  { name: 'ProfileRequired', type: 'error', inputs: [] },
 ] as const
 
 export const ESCROW_ABI = [
