@@ -170,7 +170,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
   /**
    * @dev Dynamic stake: high reputation = lower stake.
-   * Formula: baseStake * 1000 / (100 + rep)
+   * Formula: baseStake * 100 / (100 + rep)
    */
   function requiredStakeFor(address user) public view returns (uint256) {
     uint256 rep = identityRegistry.getProfile(user).reputationScore;

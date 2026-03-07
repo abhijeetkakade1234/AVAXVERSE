@@ -21,6 +21,8 @@ async function main() {
     NEXT_PUBLIC_IDENTITY_REGISTRY: addresses.IdentityRegistry,
     NEXT_PUBLIC_REPUTATION_TOKEN: addresses.ReputationToken,
     NEXT_PUBLIC_ESCROW_FACTORY: addresses.EscrowFactory,
+    NEXT_PUBLIC_AVAX_TOKEN: addresses.AVAXToken,
+    NEXT_PUBLIC_AVAX_GOVERNOR: addresses.AVAXGovernor,
   };
 
   let newEnvContent = envContent;
