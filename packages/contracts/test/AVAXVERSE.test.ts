@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { ethers } from 'hardhat'
+import { ethers, upgrades } from 'hardhat'
 import {
   IdentityRegistry,
   ReputationToken,
@@ -11,18 +11,18 @@ async function deployContracts() {
   const [owner, alice, bob, carol, mediator, feeWallet] = await ethers.getSigners()
 
   const IdentityRegistry = await ethers.getContractFactory('IdentityRegistry')
-  const registry = (await IdentityRegistry.deploy()) as unknown as IdentityRegistry
+  const registry = (await upgrades.deployProxy(IdentityRegistry, [], { kind: 'uups' })) as unknown as IdentityRegistry
 
   const ReputationToken = await ethers.getContractFactory('ReputationToken')
-  const repToken = (await ReputationToken.deploy()) as unknown as ReputationToken
+  const repToken = (await upgrades.deployProxy(ReputationToken, [], { kind: 'uups', unsafeAllow: ['constructor'] })) as unknown as ReputationToken
 
   const EscrowFactory = await ethers.getContractFactory('EscrowFactory')
-  const factory = (await EscrowFactory.deploy(
+  const factory = (await upgrades.deployProxy(EscrowFactory, [
     await registry.getAddress(),
     await repToken.getAddress(),
     feeWallet.address,
     mediator.address,
-  )) as unknown as EscrowFactory
+  ], { kind: 'uups', unsafeAllow: ['constructor'] })) as unknown as EscrowFactory
 
   await repToken.setMinter(await factory.getAddress(), true)
   await registry.setAuthorizedUpdater(await factory.getAddress(), true)

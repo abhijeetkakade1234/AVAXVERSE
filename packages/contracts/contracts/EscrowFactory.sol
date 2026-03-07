@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import './Escrow.sol';
 import './interfaces/IIdentityRegistry.sol';
@@ -15,22 +17,22 @@ import './interfaces/IReputationToken.sol';
  *         - timeout-based penalties
  *         - blocklist + penalty points
  */
-contract EscrowFactory is Ownable, ReentrancyGuard {
-  uint256 public platformFeeBps = 250; // 2.5%
+contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard {
+  uint256 public platformFeeBps; // 250 = 2.5%
   address public feeRecipient;
   address public mediator;
 
   // --- Anti-fraud config ---
-  uint256 public clientCommitmentWei = 0.01 ether;
-  uint256 public applicationStakeWei = 0.001 ether;
-  uint256 public applicationCooldownSec = 10 minutes;
-  uint256 public clientCancelGraceSec = 30 minutes;
-  uint256 public selectionTimeoutSec = 24 hours;
-  uint256 public fundingTimeoutSec = 24 hours;
-  uint256 public autoBlockPenaltyThreshold = 100;
+  uint256 public clientCommitmentWei;
+  uint256 public applicationStakeWei;
+  uint256 public applicationCooldownSec;
+  uint256 public clientCancelGraceSec;
+  uint256 public selectionTimeoutSec;
+  uint256 public fundingTimeoutSec;
+  uint256 public autoBlockPenaltyThreshold;
 
-  IIdentityRegistry public immutable identityRegistry;
-  IReputationToken public immutable reputationToken;
+  IIdentityRegistry public identityRegistry;
+  IReputationToken public reputationToken;
 
   string private constant ACHIEVEMENT_JOB_COMPLETE = 'ipfs://avaxverse/achievement/job-complete';
 
@@ -108,16 +110,31 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
   );
   event ConfigUpdated(uint256 feeBps, address feeRecipient, address mediator);
 
-  constructor(
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(
     address _identityRegistry,
     address _reputationToken,
     address _feeRecipient,
     address _mediator
-  ) Ownable(msg.sender) {
+  ) public initializer {
+    __Ownable_init(msg.sender);
     identityRegistry = IIdentityRegistry(_identityRegistry);
     reputationToken = IReputationToken(_reputationToken);
     feeRecipient = _feeRecipient;
     mediator = _mediator;
+
+    platformFeeBps = 250;
+    clientCommitmentWei = 0.01 ether;
+    applicationStakeWei = 0.001 ether;
+    applicationCooldownSec = 10 minutes;
+    clientCancelGraceSec = 30 minutes;
+    selectionTimeoutSec = 24 hours;
+    fundingTimeoutSec = 24 hours;
+    autoBlockPenaltyThreshold = 100;
   }
 
   /**
@@ -529,4 +546,6 @@ contract EscrowFactory is Ownable, ReentrancyGuard {
       _userJobs[user].push(jobId);
     }
   }
+
+  function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

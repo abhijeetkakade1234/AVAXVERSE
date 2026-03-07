@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from 'hardhat/config'
 import '@nomicfoundation/hardhat-toolbox'
+import '@openzeppelin/hardhat-upgrades'
 import * as dotenv from 'dotenv'
 
 dotenv.config()
@@ -17,6 +18,7 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
       evmVersion: 'cancun',
+      viaIR: true,
     },
   },
   networks: {
