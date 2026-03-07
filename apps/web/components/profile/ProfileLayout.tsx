@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useAccount, useReadContract, useReadContracts } from 'wagmi'
-import { type Abi } from 'viem'
+import { type Abi, isAddress } from 'viem'
+import { notFound } from 'next/navigation'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { IDENTITY_REGISTRY_ABI, ESCROW_FACTORY_ABI, ESCROW_ABI } from '@/lib/abis'
 import Navbar from '@/components/Navbar'
@@ -40,6 +41,11 @@ interface ProfileLayoutProps {
 export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
     const { address: connectedAddress } = useAccount()
     const [activeTab, setActiveTab] = useState<'profile' | 'achievements' | 'missions' | 'settings'>('profile')
+
+    // 0. Validate Address
+    if (targetAddress && !isAddress(targetAddress)) {
+        notFound()
+    }
 
     // 1. Fetch Profile
     const {
@@ -229,12 +235,14 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
 
     let parsedSocials = { twitter: '', github: '' };
     let parsedSkills: string[] = [];
+    let parsedBio = '';
     if (profile?.exists && profile.metadataURI) {
         try {
             const metaStr = profile.metadataURI.replace('data:application/json,', '');
             const metaObj = JSON.parse(metaStr);
             parsedSocials = metaObj.socials || { twitter: '', github: '' };
             parsedSkills = metaObj.skills || [];
+            parsedBio = metaObj.bio || '';
         } catch { /* ignore */ }
     }
 
@@ -242,11 +250,12 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
         <>
             <Navbar />
             <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors duration-500">
-                <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-28 pb-8 gap-8 relative z-10">
+                <div className="flex flex-col lg:flex-row max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-28 pb-8 gap-8 relative z-10">
                     <ProfileSidebar
                         profileExists={!!profile?.exists}
                         displayName={displayName}
                         displayPfp={displayPfp}
+                        parsedBio={parsedBio}
                         parsedSocials={parsedSocials}
                         parsedSkills={parsedSkills}
                         activeTab={activeTab}

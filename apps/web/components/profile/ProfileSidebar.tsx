@@ -4,6 +4,7 @@ interface ProfileSidebarProps {
     profileExists: boolean;
     displayName: string;
     displayPfp: string;
+    parsedBio: string;
     parsedSocials: { twitter: string; github: string; };
     parsedSkills: string[];
     activeTab: 'profile' | 'achievements' | 'missions' | 'settings';
@@ -18,6 +19,7 @@ export default function ProfileSidebar({
     profileExists,
     displayName,
     displayPfp,
+    parsedBio,
     parsedSocials,
     parsedSkills,
     activeTab,
@@ -45,8 +47,8 @@ export default function ProfileSidebar({
 
     const rankTitle = profileExists ? getRankTitle(reputationScore) : 'Guest';
     return (
-        <aside className="w-72 flex-shrink-0 hidden lg:block">
-            <div className="sticky top-24 space-y-6">
+        <aside className="w-full lg:w-72 flex-shrink-0">
+            <div className="lg:sticky lg:top-24 space-y-6">
                 <div className="glass-panel bg-[rgba(255,255,255,0.4)] dark:bg-[rgba(30,27,75,0.4)] rounded-2xl p-6 shadow-sm border border-white/40 dark:border-white/10">
                     <div className="flex flex-col items-center text-center mb-6">
                         <div className="relative mb-4">
@@ -60,6 +62,12 @@ export default function ProfileSidebar({
                         <span className="text-sm text-[#8B82F6] font-semibold">
                             {rankTitle}
                         </span>
+
+                        {parsedBio && (
+                            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400 italic px-2 line-clamp-3">
+                                {parsedBio}
+                            </p>
+                        )}
 
                         <button
                             onClick={handleShare}

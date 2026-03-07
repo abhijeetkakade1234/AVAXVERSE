@@ -450,17 +450,46 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                 </Link>
                             </div>
                             <div className="mt-6">
-                                <div className="flex justify-between text-[10px] font-extrabold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark mb-2">
-                                    {FLOW_STEPS.map(step => <span key={step}>{step}</span>)}
+                                <div className="md:hidden space-y-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark">Mission Progress</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">{flowStepIndex + 1} / {FLOW_STEPS.length}</span>
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        {FLOW_STEPS.map((step, idx) => (
+                                            <div
+                                                key={step}
+                                                className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${idx <= flowStepIndex ? 'bg-primary' : 'bg-white/10 dark:bg-white/5'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {FLOW_STEPS.map((step, idx) => (
+                                            <div key={step} className={`flex items-center gap-2 ${idx > flowStepIndex ? 'opacity-30' : ''}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${idx <= flowStepIndex ? 'bg-primary' : 'bg-gray-500'}`} />
+                                                <span className="text-[9px] font-bold uppercase tracking-tight">{step}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    {FLOW_STEPS.map((step, idx) => (
-                                        <div
-                                            key={step}
-                                            className={`h-2 rounded-full flex-1 ${idx <= flowStepIndex ? 'bg-primary' : 'bg-white/10'}`}
-                                            title={step}
-                                        />
-                                    ))}
+
+                                <div className="hidden md:block">
+                                    <div className="flex justify-between text-[10px] font-extrabold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark mb-2">
+                                        {FLOW_STEPS.map((step, idx) => (
+                                            <span key={step} className={idx > flowStepIndex ? 'opacity-40' : ''}>
+                                                {step}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {FLOW_STEPS.map((step, idx) => (
+                                            <div
+                                                key={step}
+                                                className={`h-2 rounded-full flex-1 transition-colors duration-500 ${idx <= flowStepIndex ? 'bg-primary' : 'bg-white/10 dark:bg-white/5'}`}
+                                                title={step}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
