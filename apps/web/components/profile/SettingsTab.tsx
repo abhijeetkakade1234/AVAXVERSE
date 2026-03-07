@@ -3,6 +3,8 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { Loader2, X, Twitter, Github } from 'lucide-react';
 import { CONTRACT_ADDRESSES } from '@/lib/config';
 import { IDENTITY_REGISTRY_ABI } from '@/lib/abis';
+import { useSnackbar } from '@/context/SnackbarContext';
+import { translateError } from '@/lib/error-translator';
 
 interface ProfileData {
     exists: boolean;
@@ -62,8 +64,9 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
         }
     }, [profile, isEditing]);
 
-    const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
+    const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract();
     const { isLoading: isConfirming, isSuccess, error: receiptError } = useWaitForTransactionReceipt({ hash });
+    const { showSnackbar } = useSnackbar();
 
     // Log errors for debugging
     useEffect(() => {
@@ -82,7 +85,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
         }
     }, [isSuccess, refetchProfile]);
 
-    function handleSave(e: React.FormEvent) {
+    async function handleSave(e: React.FormEvent) {
         e.preventDefault();
 
         if (isProfileLoading) {
@@ -108,7 +111,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
             // If profile is undefined, we wait.
             if (profile && !profile.exists) {
                 console.log("Registering new profile...");
-                writeContract({
+                await writeContractAsync({
                     address: CONTRACT_ADDRESSES.IdentityRegistry,
                     abi: IDENTITY_REGISTRY_ABI,
                     functionName: 'register',
@@ -116,7 +119,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                 });
             } else if (profile && profile.exists) {
                 console.log("Updating existing profile...");
-                writeContract({
+                await writeContractAsync({
                     address: CONTRACT_ADDRESSES.IdentityRegistry,
                     abi: IDENTITY_REGISTRY_ABI,
                     functionName: 'updateProfile',
@@ -125,8 +128,14 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
             } else {
                 console.warn("Cannot save: Profile state unknown.");
             }
-        } catch (err) {
-            console.error("Caught error during writeContract invocation:", err);
+        } catch (error: unknown) {
+            console.error("Caught error during writeContract invocation:", error);
+            const translated = translateError(error);
+            if (translated.includes('cancelled')) {
+                showSnackbar(translated, 'info');
+            } else {
+                showSnackbar(translated, 'error');
+            }
         }
     }
 

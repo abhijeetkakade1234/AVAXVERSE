@@ -152,6 +152,13 @@ export const ESCROW_FACTORY_ABI = [
     outputs: [],
   },
   {
+    name: 'onJobCompleted',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'escrowAddr', type: 'address' }],
+    outputs: [],
+  },
+  {
     name: 'getJob',
     type: 'function',
     stateMutability: 'view',
@@ -229,6 +236,20 @@ export const ESCROW_FACTORY_ABI = [
   },
   {
     name: 'requiredStakeFor',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'applicationCooldown',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'lastApplicationAt',
     type: 'function',
     stateMutability: 'view',
     inputs: [{ name: 'user', type: 'address' }],
@@ -423,6 +444,18 @@ export const AVAX_GOVERNOR_ABI = [
       { name: 'values', type: 'uint256[]' },
       { name: 'calldatas', type: 'bytes[]' },
       { name: 'description', type: 'string' },
+    ],
+    outputs: [{ name: 'proposalId', type: 'uint256' }],
+  },
+  {
+    name: 'execute',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'targets', type: 'address[]' },
+      { name: 'values', type: 'uint256[]' },
+      { name: 'calldatas', type: 'bytes[]' },
+      { name: 'descriptionHash', type: 'bytes32' },
     ],
     outputs: [{ name: 'proposalId', type: 'uint256' }],
   },

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
 import Logo from './Logo'
@@ -7,6 +8,12 @@ import { useTheme } from './ThemeProvider'
 
 export default function Navbar() {
   const { theme, toggle } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+  }, [])
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
@@ -26,10 +33,10 @@ export default function Navbar() {
           onClick={toggle}
           aria-label="Toggle theme"
           className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 hover:scale-110"
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          title={mounted && theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           <span className="material-symbols-outlined text-[18px]">
-            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            {mounted && theme === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
         </button>
 

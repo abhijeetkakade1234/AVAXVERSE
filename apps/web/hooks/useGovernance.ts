@@ -56,11 +56,11 @@ export function useGovernance() {
     }
 
     // 5. Propose
-    const propose = async (description: string) => {
+    const propose = async (description: string, targetAddr?: `0x${string}`, calldata?: `0x${string}`) => {
         if (!address) return
-        const targets: readonly `0x${string}`[] = [CONTRACT_ADDRESSES.AVAXToken]
+        const targets: readonly `0x${string}`[] = [targetAddr || CONTRACT_ADDRESSES.AVAXToken]
         const values: readonly bigint[] = [0n]
-        const calldatas: readonly `0x${string}`[] = ['0x'] // Placeholder
+        const calldatas: readonly `0x${string}`[] = [calldata || '0x']
         try {
             return await writeContractAsync({
                 address: CONTRACT_ADDRESSES.AVAXGovernor,
@@ -74,6 +74,21 @@ export function useGovernance() {
         }
     }
 
+    // 6. Execute (Queue and Execute are often combined or separate, here we map to execute assuming no timelock or basic governor)
+    const execute = async (targets: `0x${string}`[], values: bigint[], calldatas: `0x${string}`[], descriptionHash: `0x${string}`) => {
+        try {
+            return await writeContractAsync({
+                address: CONTRACT_ADDRESSES.AVAXGovernor,
+                abi: AVAX_GOVERNOR_ABI,
+                functionName: 'execute',
+                args: [targets, values, calldatas, descriptionHash],
+            })
+        } catch (error: unknown) {
+            console.error('Execute error:', error)
+            throw error
+        }
+    }
+
     return {
         address,
         votingPower: votingPower ? BigInt(votingPower.toString()) : 0n,
@@ -81,6 +96,7 @@ export function useGovernance() {
         selfDelegate,
         castVote,
         propose,
+        execute,
         hasVotingPower: votingPower ? BigInt(votingPower.toString()) > 0n : false,
         isDelegated: delegate && address ? delegate.toString().toLowerCase() === address.toLowerCase() : false,
     }

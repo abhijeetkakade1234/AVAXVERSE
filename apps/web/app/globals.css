@@ -138,4 +138,42 @@
     background-image: radial-gradient(circle at 20% 30%, rgba(139, 130, 246, 0.15) 0%, transparent 40%),
       radial-gradient(circle at 80% 70%, rgba(232, 121, 249, 0.15) 0%, transparent 40%);
   }
+
+  /* Premium Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(123, 97, 255, 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: all 0.3s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(123, 97, 255, 0.6);
+    background-clip: content-box;
+  }
+
+  /* Support for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(123, 97, 255, 0.3) rgba(0, 0, 0, 0.05);
+  }
+
+  .dark * {
+    scrollbar-color: rgba(123, 97, 255, 0.3) rgba(255, 255, 255, 0.02);
+  }
 }

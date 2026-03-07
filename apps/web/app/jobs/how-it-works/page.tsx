@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ShieldCheck, Zap, Scale, Clock, Info, HelpCircle, Layout, Code2, Rocket, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ShieldCheck, Zap, Scale, Clock, Info, HelpCircle, Layout, Code2, Rocket, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'
@@ -18,7 +18,7 @@ const FAQ_ITEMS = [
     },
     {
         q: "What happens if there is a dispute?",
-        a: "If either party raising a dispute, the funds are locked in the smart contract. A 3-day window opens for both sides to submit final evidence. After this, an independent Mediator reviews the on-chain evidence and the Audit Report (if applicable) to decide the final distribution of funds. Mediators are high-reputation community members or specialized security partners."
+        a: "If either party raises a dispute, the funds are locked in the smart contract. A 3-day window opens for both sides to submit final evidence. Initially, an independent Mediator reviews the on-chain evidence. However, if the mediator is unresponsive, or either side prefers community arbitration, the dispute can be escalated to the DAO Governance Portal. Once escalated, the community votes, and their decision mechanically triggers the final distribution of funds."
     },
     {
         q: "Can I cancel a mission after it's been posted?",
@@ -43,8 +43,8 @@ const ROUTE_EXPLANATIONS = [
     },
     {
         icon: <Scale className="text-purple-500" size={24} />,
-        title: "Governance (/governance)",
-        desc: "Where the community decides on protocol parameters, mediator selections, and long-term platform evolution using the AVX token (coming soon)."
+        title: "Governance & Court (/governance)",
+        desc: "Where the community decides on protocol parameters and acts as the Decentralized Court for resolving escalated mission disputes via AVX token voting."
     },
     {
         icon: <Code2 className="text-blue-500" size={24} />,
@@ -202,6 +202,14 @@ export default function HowItWorksPage() {
                                             </h3>
                                             <p className="text-sm text-text-muted-light dark:text-text-muted-dark leading-relaxed">
                                                 If a dispute is raised, the counter-evidence window is 72 hours. Our goal is for mediators to resolve all disputes within 5 business days of the final evidence submission.
+                                            </p>
+                                        </div>
+                                        <div className="md:col-span-2 mt-4 p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                                            <h3 className="text-xl font-bold mb-3 flex items-center gap-2 text-red-500">
+                                                <AlertCircle size={20} /> Decentralized Court (High Risk)
+                                            </h3>
+                                            <p className="text-sm text-red-500/80 leading-relaxed">
+                                                By choosing to escalate a dispute to the DAO Governance Portal, you surrender final decision-making power to the token-holding community. When a governance proposal passes, an automated on-chain execution payload is triggered. <strong>Whatever the community votes, the dispute fund will mechanically be distributed accordingly. The DAO&apos;s decision is final and irreversible. Dispute at your own risk.</strong>
                                             </p>
                                         </div>
                                     </div>

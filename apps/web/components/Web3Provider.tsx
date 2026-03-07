@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { WagmiProvider, http } from 'wagmi'
+import { WagmiProvider, http, type Transport } from 'wagmi'
 import {
     RainbowKitProvider,
     darkTheme,
@@ -36,7 +36,7 @@ const wagmiConfig = createConfig({
     chains: [ACTIVE_CHAIN],
     transports: {
         [ACTIVE_CHAIN.id]: http(),
-    },
+    } as Record<number, Transport>,
     ssr: true,
 })
 

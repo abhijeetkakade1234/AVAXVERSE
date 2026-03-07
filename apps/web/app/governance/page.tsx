@@ -5,24 +5,29 @@ import {
     Users,
     Target,
     Clock,
+    AlertCircle,
     ArrowUpRight,
     TrendingUp
 } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import Link from 'next/link'
 import { useGovernance } from '@/hooks/useGovernance'
 import { formatUnits } from 'viem'
 import { usePublicClient } from 'wagmi'
+import { translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { AVAX_GOVERNOR_ABI } from '@/lib/abis'
 import { useEffect, useState } from 'react'
 import { useSnackbar } from '@/context/SnackbarContext'
+import Pagination from '@/components/ui/Pagination'
 
 interface Proposal {
     id: string;
     fullId: bigint;
     title: string;
     desc: string;
+    type?: 'dispute' | 'protocol';
     status: 'active' | 'defeated' | 'passed' | 'pending';
     votes: { yes: number; no: number; abstain: number };
 }
@@ -33,6 +38,9 @@ export default function GovernancePage() {
     const [proposals, setProposals] = useState<Proposal[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isActionPending, setIsActionPending] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const pageSize = 100
+
     const publicClient = usePublicClient()
     const { showSnackbar } = useSnackbar()
 
@@ -45,13 +53,12 @@ export default function GovernancePage() {
         } catch (error: unknown) {
             console.error('Proposal error:', error)
             const errMsg = error instanceof Error ? error.message : String(error)
-            if (errMsg.toLowerCase().includes('user rejected')) {
-                showSnackbar('Transaction cancelled by user.', 'info')
-            } else if (errMsg.toLowerCase().includes('gas limit')) {
+            if (errMsg.toLowerCase().includes('gas limit')) {
                 showSnackbar('Gas estimation failed. Try a slightly different description to ensure a unique proposal hash.', 'error')
-            } else {
-                showSnackbar('Failed to submit proposal. Please ensure you have enough voting power.', 'error')
+                return
             }
+            const translated = translateError(error)
+            showSnackbar(translated, translated.includes('cancelled') ? 'info' : 'error')
         } finally {
             setIsActionPending(false)
         }
@@ -64,12 +71,8 @@ export default function GovernancePage() {
             window.location.reload()
         } catch (error: unknown) {
             console.error('Vote error:', error)
-            const errMsg = error instanceof Error ? error.message : String(error)
-            if (errMsg.toLowerCase().includes('user rejected')) {
-                showSnackbar('Transaction cancelled by user.', 'info')
-            } else {
-                showSnackbar('Failed to cast vote. ensure you haven\'t already voted.', 'error')
-            }
+            const translated = translateError(error)
+            showSnackbar(translated, translated.includes('cancelled') ? 'info' : 'error')
         } finally {
             setIsActionPending(false)
         }
@@ -82,12 +85,8 @@ export default function GovernancePage() {
             window.location.reload()
         } catch (error: unknown) {
             console.error('Delegation error:', error)
-            const errMsg = error instanceof Error ? error.message : String(error)
-            if (errMsg.toLowerCase().includes('user rejected')) {
-                showSnackbar('Transaction cancelled by user.', 'info')
-            } else {
-                showSnackbar('Delegation failed. Please try again.', 'error')
-            }
+            const translated = translateError(error)
+            showSnackbar(translated, translated.includes('cancelled') ? 'info' : 'error')
         } finally {
             setIsActionPending(false)
         }
@@ -117,30 +116,29 @@ export default function GovernancePage() {
                     fromBlock: 0n,
                 })
 
-                const proposalData = await Promise.all(logs.map(async (log) => {
+                const recentLogs = logs.slice(-100)
+                const proposalData = await Promise.all(recentLogs.map(async (log) => {
                     const args = log.args as { proposalId: bigint; description: string }
                     const proposalId = args.proposalId
-
                     const [againstVotes, forVotes, abstainVotes] = await publicClient.readContract({
                         address: CONTRACT_ADDRESSES.AVAXGovernor,
                         abi: AVAX_GOVERNOR_ABI,
                         functionName: 'proposalVotes',
                         args: [proposalId],
                     }) as [bigint, bigint, bigint]
-
                     const state = await publicClient.readContract({
                         address: CONTRACT_ADDRESSES.AVAXGovernor,
                         abi: AVAX_GOVERNOR_ABI,
                         functionName: 'state',
                         args: [proposalId],
                     }) as number
-
                     return {
                         id: proposalId.toString().slice(0, 8),
                         fullId: proposalId,
                         title: args.description.split('.')[0] || 'Untitled Proposal',
                         desc: args.description,
                         status: (state === 1 ? 'active' : state === 3 ? 'defeated' : state === 4 ? 'passed' : 'pending') as Proposal['status'],
+                        type: (args.description.toLowerCase().includes('dispute') ? 'dispute' : 'protocol') as Proposal['type'],
                         votes: {
                             yes: Number(forVotes) || 0,
                             no: Number(againstVotes) || 0,
@@ -148,7 +146,6 @@ export default function GovernancePage() {
                         },
                     }
                 }))
-
                 setProposals(proposalData.reverse())
             } catch (error) {
                 console.error('Error fetching proposals:', error)
@@ -157,36 +154,47 @@ export default function GovernancePage() {
                 setIsLoading(false)
             }
         }
-
         fetchProposals()
     }, [publicClient, showSnackbar])
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [activeTab])
+
+    const filteredProposals = proposals.filter(p => {
+        if (activeTab === 'active') return p.status === 'active' || p.status === 'pending'
+        if (activeTab === 'passed') return p.status === 'passed'
+        if (activeTab === 'failed') return p.status === 'defeated'
+        return true
+    })
+
+    const totalPages = Math.ceil(filteredProposals.length / pageSize)
+    const paginatedProposals = filteredProposals.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
     return (
         <div className="bg-[#B4AAFD] bg-gradient-to-b from-[#B4AAFD] via-[#9B8CFA] to-[#1A1A2E] dark:from-[#1A1A2E] dark:to-[#121222] text-gray-900 dark:text-white font-display antialiased min-h-screen flex flex-col relative">
             <Navbar />
-
             <div className="pt-32 pb-20 relative z-10 w-full">
                 <div className="max-w-7xl mx-auto px-4 md:px-8">
                     <div className="flex flex-col lg:flex-row justify-between items-start gap-12 mb-20">
                         <div className="lg:w-1/2 space-y-6">
                             <div className="flex items-center gap-2 bg-white/40 dark:bg-white/10 px-6 py-3 rounded-full backdrop-blur-md border border-white/20 w-fit">
                                 <Users size={16} className="text-primary dark:text-white" />
-                                <span className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Democracy Protocol</span>
+                                <span className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Arbitration Protocol</span>
                             </div>
                             <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight">
-                                Community <br /> <span className="gradient-text">Governance.</span>
+                                Professional <br /> <span className="gradient-text">Dispute Court.</span>
                             </h1>
                             <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 border border-white/20">
                                 <p className="text-lg text-white/70 max-w-lg">
-                                    Shape the future of AVAXVERSE. Propose changes, vote on upgrades, and allocate ecosystem resources.
+                                    Decentralized justice for the sovereign economy. Review evidence, cast your juror vote, and resolve high-stakes mission disputes.
                                 </p>
                             </div>
-
                             {!isDelegated && address && (
                                 <div className="p-6 rounded-2xl bg-white/20 dark:bg-white/5 border border-white/20 backdrop-blur-md flex items-center justify-between shadow-xl">
                                     <div className="flex flex-col">
                                         <span className="text-sm font-bold text-white uppercase tracking-wider">Action Required</span>
-                                        <span className="text-xs text-white/60">You need to delegate to yourself to vote</span>
+                                        <span className="text-xs text-white/60">You need to delegate to yourself to activate juror power</span>
                                     </div>
                                     <button
                                         disabled={isActionPending}
@@ -198,66 +206,68 @@ export default function GovernancePage() {
                                 </div>
                             )}
                         </div>
-
-                        {/* Governance Stats */}
                         <div className="lg:w-1/2 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                            <GovStat label="Your Voting Power" value={`${parseFloat(formatUnits(votingPower, 18)).toLocaleString()} AVAXV`} icon={<TrendingUp size={20} />} />
-                            <GovStat label="Active Proposals" value={proposals.filter(p => p.status === 'active').length.toString()} icon={<Clock size={20} />} />
-                            <GovStat label="Total Proposals" value={proposals.length.toString()} icon={<Users size={20} />} />
+                            <GovStat label="Your Juror Power" value={`${parseFloat(formatUnits(votingPower, 18)).toLocaleString()} AVAXV`} icon={<TrendingUp size={20} />} />
+                            <GovStat label="Active Disputes" value={proposals.filter(p => p.status === 'active' || p.status === 'pending').length.toString()} icon={<Clock size={20} />} />
+                            <GovStat label="Total Cases" value={proposals.length.toString()} icon={<Users size={20} />} />
                             <GovStat label="Quorum Threshold" value="4%" icon={<Target size={20} />} />
                         </div>
                     </div>
 
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
-                        <div className="flex p-1.5 bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl w-full md:w-auto">
-                            <TabBtn active={activeTab === 'active'} onClick={() => setActiveTab('active')} label="Active" count={proposals.filter(p => p.status === 'active').length} />
+                        <div className="flex p-1.5 bg-white/20 dark:bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl w-full md:w-auto overflow-x-auto">
+                            <TabBtn active={activeTab === 'active'} onClick={() => setActiveTab('active')} label="Active" count={proposals.filter(p => p.status === 'active' || p.status === 'pending').length} />
                             <TabBtn active={activeTab === 'passed'} onClick={() => setActiveTab('passed')} label="Passed" count={proposals.filter(p => p.status === 'passed').length} />
                             <TabBtn active={activeTab === 'failed'} onClick={() => setActiveTab('failed')} label="Failed" count={proposals.filter(p => p.status === 'defeated').length} />
                         </div>
-
-                        <div className="flex gap-4 w-full md:w-auto">
-                            <button
-                                disabled={isActionPending}
-                                onClick={handlePropose}
-                                className={`btn-primary py-3 px-8 text-sm shadow-lg shadow-primary/20 ${isActionPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {isActionPending ? 'Transaction Pending...' : 'New Proposal'}
-                            </button>
-                        </div>
+                        {address && (
+                            <div className="flex gap-4 w-full md:w-auto">
+                                <button
+                                    disabled={isActionPending}
+                                    onClick={handlePropose}
+                                    className={`btn-primary py-3 px-8 text-sm shadow-lg shadow-primary/20 ${isActionPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {isActionPending ? 'Transaction Pending...' : 'New Proposal'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Proposals List */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 min-h-[400px]">
                         {isLoading ? (
-                            <div className="glass-panel p-20 rounded-3xl text-center text-white/50 border border-white/10">Loading proposals...</div>
-                        ) : proposals.length === 0 ? (
+                            <div className="glass-panel p-20 rounded-3xl text-center text-white/50 border border-white/10">
+                                <Clock className="mx-auto mb-4 animate-spin opacity-20" size={48} />
+                                Loading proposals...
+                            </div>
+                        ) : paginatedProposals.length === 0 ? (
                             <div className="glass-panel p-20 rounded-3xl text-center text-white/50 border border-white/10">No proposals found</div>
                         ) : (
-                            proposals
-                                .filter(p => {
-                                    if (activeTab === 'active') return p.status === 'active' || p.status === 'pending'
-                                    if (activeTab === 'passed') return p.status === 'passed'
-                                    if (activeTab === 'failed') return p.status === 'defeated'
-                                    return true
-                                })
-                                .map((p, idx) => (
+                            <>
+                                {paginatedProposals.map((p) => (
                                     <ProposalCard
-                                        key={idx}
+                                        key={p.fullId.toString()}
                                         id={p.id}
+                                        fullId={p.fullId}
                                         title={p.title}
                                         desc={p.desc}
                                         status={p.status}
+                                        type={p.type}
                                         votes={p.votes}
                                         onVote={(support) => handleVote(p.fullId, support)}
                                         hasPower={votingPower > 0n}
                                         isPending={isActionPending}
                                     />
-                                ))
+                                ))}
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                />
+                            </>
                         )}
                     </div>
                 </div>
             </div>
-
             <section className="px-4 md:px-8 py-20 mt-auto">
                 <div className="max-w-7xl mx-auto w-full">
                     <Footer />
@@ -285,7 +295,7 @@ function TabBtn({ active, label, count, onClick }: { active: boolean, label: str
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all font-bold text-sm ${active
+            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl transition-all font-bold text-sm whitespace-nowrap ${active
                 ? 'bg-white/30 dark:bg-white/20 text-white shadow-lg'
                 : 'text-white/50 hover:text-white/80 hover:bg-white/5'
                 }`}
@@ -295,31 +305,17 @@ function TabBtn({ active, label, count, onClick }: { active: boolean, label: str
     )
 }
 
-function ProposalCard({
-    id,
-    title,
-    desc,
-    status,
-    votes,
-    onVote,
-    hasPower,
-    isPending
-}: {
-    id: string,
-    title: string,
-    desc: string,
-    status: string,
-    votes: { yes: number, no: number, abstain: number },
-    onVote: (support: number) => void,
-    hasPower: boolean,
-    isPending: boolean
+function ProposalCard({ id, fullId, title, desc, status, type, votes, onVote, hasPower, isPending }: {
+    id: string, fullId: bigint, title: string, desc: string, status: string,
+    type?: 'dispute' | 'protocol', votes: { yes: number, no: number, abstain: number },
+    onVote: (support: number) => void, hasPower: boolean, isPending: boolean
 }) {
     const totalVotes = votes.yes + votes.no + votes.abstain || 1
     const yesPercent = Math.round((votes.yes / totalVotes) * 100)
     const noPercent = Math.round((votes.no / totalVotes) * 100)
 
     return (
-        <div className="glass-panel p-10 rounded-[2.5rem] border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl mission-card-hover group relative overflow-hidden transition-all duration-500">
+        <div className="glass-panel p-10 rounded-[2.5rem] border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl mission-card-hover group relative overflow-hidden transition-all duration-500 animate-enter">
             <div className="flex flex-col lg:flex-row gap-10 items-start relative z-10">
                 <div className="flex-1 space-y-6">
                     <div className="flex items-center gap-4">
@@ -327,6 +323,11 @@ function ProposalCard({
                         <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest border border-white/10">
                             <Clock size={12} className="text-primary" /> {status.toUpperCase()}
                         </div>
+                        {type === 'dispute' && (
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-red-400/20 text-red-400 text-[10px] font-bold uppercase tracking-widest border border-red-400/30">
+                                <AlertCircle size={12} /> DISPUTE CASE
+                            </div>
+                        )}
                     </div>
                     <h3 className="text-3xl font-bold text-white group-hover:text-primary transition-colors duration-300 leading-tight">{title}</h3>
                     <p className="text-base text-white/50 leading-relaxed max-w-3xl line-clamp-2">{desc}</p>
@@ -355,31 +356,30 @@ function ProposalCard({
                                         onClick={() => onVote(1)}
                                         className={`flex-1 py-3.5 rounded-2xl bg-neon-green/10 border border-neon-green/20 text-neon-green text-xs font-black uppercase tracking-widest hover:bg-neon-green hover:text-black transition-all duration-300 shadow-lg shadow-neon-green/5 ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                        {isPending ? '...' : 'Vote Yes'}
+                                        {isPending ? '...' : type === 'dispute' ? 'Release' : 'Yes'}
                                     </button>
                                     <button
                                         disabled={isPending || !hasPower}
                                         onClick={() => onVote(0)}
                                         className={`flex-1 py-3.5 rounded-2xl bg-red-400/10 border border-red-400/20 text-red-400 text-xs font-black uppercase tracking-widest hover:bg-red-400 hover:text-white transition-all duration-300 shadow-lg shadow-red-400/5 ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                        {isPending ? '...' : 'Vote No'}
+                                        {isPending ? '...' : type === 'dispute' ? 'Refund' : 'No'}
                                     </button>
                                 </div>
                             ) : (
                                 <div className="text-center p-3 rounded-2xl bg-white/5 border border-white/10">
-                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Insufficient Power to Vote</span>
+                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Insufficient Power</span>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <button className="btn-secondary w-full py-3 text-xs justify-center opacity-40 hover:opacity-100 transition-opacity">
-                        Operational Details <ArrowUpRight size={16} className="ml-2" />
-                    </button>
+                    <Link href={`/governance/${fullId.toString()}`} className="btn-secondary w-full py-3 text-xs justify-center opacity-40 hover:opacity-100 transition-opacity text-center flex items-center">
+                        Details <ArrowUpRight size={16} className="ml-2" />
+                    </Link>
                 </div>
             </div>
 
-            {/* Background Decorative Element */}
             <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:opacity-[0.07] transition-all duration-700 pointer-events-none transform group-hover:scale-110 group-hover:-rotate-12">
                 <VoteIcon size={240} className="text-white" />
             </div>

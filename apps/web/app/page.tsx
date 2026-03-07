@@ -37,16 +37,16 @@ export default function Home() {
     },
     {
       title: "The Super App Hub",
-      desc: "Modular Expansion: From Job Marketplaces to Bounties and DeFi, everything connects to your core trust identity.",
+      desc: "A Unified Trust Layer: From Job Marketplaces to Arbitration and DeFi, every action compounds into your sovereign on-chain legacy.",
       bg: "bg-[#7B61FF]",
       icon: "apps",
       textColor: "text-white"
     },
     {
-      title: "Democracy Protocol",
-      desc: "Governance Engine: Shape the ecosystem's future through decentralized, reputation-weighted voting on proposals.",
+      title: "Professional Court",
+      desc: "Dispute DAO: A decentralized juror system where community peers resolve mission disputes using reputation-weighted power.",
       bg: "bg-card-dark-2",
-      icon: "how_to_reg",
+      icon: "gavel",
       textColor: "text-white"
     }
   ]

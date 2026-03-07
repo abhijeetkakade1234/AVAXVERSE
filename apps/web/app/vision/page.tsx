@@ -163,10 +163,10 @@ export default function VisionPage() {
                             />
                             <DeepModuleCard
                                 icon={<Vote size={28} />}
-                                title="M3: Governance"
+                                title="M3: Dispute DAO"
                                 status="Beta"
-                                flow="Propose → Debate → Vote → Execute"
-                                desc="The Democracy Protocol. Manage the AVAXVERSE treasury and resolve ecosystem-wide disputes via your on-chain DID."
+                                flow="Dispute → Evidence → Juror Vote → Resolve"
+                                desc="The Decentralized Professional Court. DID holders act as autonomous jurors to resolve mission disputes based on their on-chain reputation."
                             />
                             <DeepModuleCard
                                 icon={<Layout size={28} />}

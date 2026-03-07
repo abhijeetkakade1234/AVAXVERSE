@@ -10,7 +10,7 @@ import * as path from 'path'
 async function main() {
   const [deployer] = await ethers.getSigners()
 
-  console.log('\n🚀 Deploying AVAXVERSE contracts...')
+  console.log('\n🚀 Deploying AVAXVERSE Super App contracts...')
   console.log(`  Network  : ${network.name}`)
   console.log(`  Deployer : ${deployer.address}`)
   console.log(`  Balance  : ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} AVAX\n`)
@@ -27,29 +27,47 @@ async function main() {
   await repToken.waitForDeployment()
   console.log(`✅ ReputationToken    deployed: ${await repToken.getAddress()}`)
 
-  // 3. EscrowFactory — use deployer as fee recipient and mediator for MVP
+  // 3. AVAXToken (Soulbound Governance/Reputation Token)
+  const AVAXToken = await ethers.getContractFactory('AVAXToken')
+  const avaxToken = await AVAXToken.deploy(deployer.address)
+  await avaxToken.waitForDeployment()
+  console.log(`✅ AVAXToken          deployed: ${await avaxToken.getAddress()}`)
+
+  // 4. AVAXGovernor
+  const AVAXGovernor = await ethers.getContractFactory('AVAXGovernor')
+  const governor = await AVAXGovernor.deploy(await avaxToken.getAddress())
+  await governor.waitForDeployment()
+  console.log(`✅ AVAXGovernor       deployed: ${await governor.getAddress()}`)
+
+  // 5. EscrowFactory
   const EscrowFactory = await ethers.getContractFactory('EscrowFactory')
   const factory = await EscrowFactory.deploy(
     await registry.getAddress(),
     await repToken.getAddress(),
-    deployer.address, // feeRecipient — change for production
-    deployer.address, // mediator     — change for production
+    deployer.address, // feeRecipient
+    await governor.getAddress() // mediator is now Governor
   )
   await factory.waitForDeployment()
   console.log(`✅ EscrowFactory      deployed: ${await factory.getAddress()}`)
 
-  // 4. Wire up permissions
+  // 6. Wire up permissions
   await repToken.setMinter(await factory.getAddress(), true)
   await registry.setAuthorizedUpdater(await factory.getAddress(), true)
-  console.log('\n🔗 Permissions set. EscrowFactory authorized on Registry + RepToken.')
+  
+  // Tie reputation points to voting power
+  await registry.setAVAXToken(await avaxToken.getAddress())
+  await avaxToken.transferOwnership(await registry.getAddress())
+  console.log('\n🔗 Permissions set. EscrowFactory authorized on Registry & RepToken. Registry authorized to mint AVAXToken.')
 
-  // 5. Save deployed addresses to a JSON file (for frontend use)
+  // 7. Save deployed addresses
   const addresses = {
     network: network.name,
     chainId: (await ethers.provider.getNetwork()).chainId.toString(),
     IdentityRegistry: await registry.getAddress(),
     ReputationToken: await repToken.getAddress(),
     EscrowFactory: await factory.getAddress(),
+    AVAXToken: await avaxToken.getAddress(),
+    AVAXGovernor: await governor.getAddress(),
   }
 
   const outputDir = path.resolve(__dirname, '..', 'deployments')

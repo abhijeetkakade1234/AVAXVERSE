@@ -55,6 +55,14 @@ export default function MissionLifecycle() {
             bg: "bg-green-500/20",
             icon: "verified",
             textColor: "text-green-400"
+        },
+        {
+            number: "08",
+            title: "Juror Arbitration",
+            desc: "If a dispute arises, it enters the Dispute DAO. Reputation-weighted jurors review the evidence and cast the final deciding vote.",
+            bg: "bg-red-500/10",
+            icon: "gavel",
+            textColor: "text-red-400"
         }
     ]
 

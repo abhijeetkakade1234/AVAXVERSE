@@ -18,6 +18,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
   address public immutable client;
   address public immutable freelancer;
   address public immutable mediator;
+  address public immutable factory;
   uint256 public immutable platformFeeBps; // basis points (e.g., 250 = 2.5%)
   address public immutable feeRecipient;
 
@@ -44,6 +45,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     address _client,
     address _freelancer,
     address _mediator,
+    address _factory,
     uint256 _feeBps,
     address _feeRecipient
   ) payable {
@@ -53,6 +55,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     client = _client;
     freelancer = _freelancer;
     mediator = _mediator;
+    factory = _factory;
     platformFeeBps = _feeBps;
     feeRecipient = _feeRecipient;
     _state = State.FUNDED;
@@ -124,6 +127,57 @@ contract Escrow is IEscrow, ReentrancyGuard {
     _releaseFunds(winner);
   }
 
+  /// @notice Mediator resolves dispute by splitting funds.
+  function resolveDisputeSplit(
+    uint256 clientShareBps,
+    string calldata reasonHash
+  ) external override nonReentrant {
+    if (msg.sender != mediator) revert Unauthorized();
+    _requireState(State.DISPUTED);
+    require(clientShareBps <= 10000, 'Escrow: invalid split');
+    require(
+      block.timestamp > disputedAt + DISPUTE_RESPONSE_WINDOW,
+      'Escrow: response window active'
+    );
+
+    _resolutionReasonHash = reasonHash;
+    emit DisputeResolvedSplit(mediator, reasonHash, clientShareBps);
+
+    uint256 total = address(this).balance;
+    uint256 fee = (total * platformFeeBps) / 10000;
+    uint256 payout = total - fee;
+
+    uint256 clientPayout = (payout * clientShareBps) / 10000;
+    uint256 freelancerPayout = payout - clientPayout;
+
+    _state = State.RELEASED;
+
+    if (fee > 0 && feeRecipient != address(0)) {
+      (bool feeOk, ) = feeRecipient.call{value: fee}('');
+      require(feeOk, 'Escrow: fee transfer failed');
+    }
+
+    if (clientPayout > 0) {
+      (bool cOk, ) = client.call{value: clientPayout}('');
+      require(cOk, 'Escrow: client payout failed');
+    }
+
+    if (freelancerPayout > 0) {
+      (bool fOk, ) = freelancer.call{value: freelancerPayout}('');
+      require(fOk, 'Escrow: freelancer payout failed');
+    }
+
+    // Notify factory for reputation
+    if (factory != address(0)) {
+      (bool success, ) = factory.call(
+        abi.encodeWithSignature('onJobCompleted(address)', address(this))
+      );
+      success; // suppress unused variable warning
+      // We don't require() here to prevent reputation errors from blocking fund release,
+      // but we log it if needed in a more advanced setting.
+    }
+  }
+
   /// @notice Anyone can trigger after review timeout to release funds to freelancer.
   function autoApprove() external override nonReentrant {
     _requireState(State.SUBMITTED);
@@ -193,5 +247,14 @@ contract Escrow is IEscrow, ReentrancyGuard {
     require(ok, 'Escrow: payout failed');
 
     emit FundsReleased(winner, payout);
+
+    // Notify factory for reputation. This is a low-level call to ensure
+    // that if the factory reverts (e.g. gas issues), the funds release still completes.
+    if (factory != address(0)) {
+      (bool success, ) = factory.call(
+        abi.encodeWithSignature('onJobCompleted(address)', address(this))
+      );
+      success; // suppress unused variable warning
+    }
   }
 }

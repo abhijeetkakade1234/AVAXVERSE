@@ -10,6 +10,63 @@ interface ProfileTabProps {
     progressToNext: number;
 }
 
+const RANK_THEMES: Record<string, {
+    bannerGradient: string;
+    icon: string;
+    accentColor: string;
+    pattern: string;
+}> = {
+    'Apprentice': {
+        bannerGradient: 'from-slate-900 via-slate-800 to-indigo-950',
+        icon: 'keyboard_command_key',
+        accentColor: '#94A3B8',
+        pattern: 'opacity-10 [background-image:radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]'
+    },
+    'Voyager': {
+        bannerGradient: 'from-blue-900 via-indigo-900 to-violet-950',
+        icon: 'explore',
+        accentColor: '#60A5FA',
+        pattern: 'opacity-15 [background-image:linear-gradient(45deg,#ffffff_12%,transparent_12%,transparent_50%,#ffffff_50%,#ffffff_62%,transparent_62%,transparent_100%)] [background-size:10px_10px]'
+    },
+    'Master': {
+        bannerGradient: 'from-emerald-900 via-teal-900 to-cyan-950',
+        icon: 'auto_awesome_motion',
+        accentColor: '#34D399',
+        pattern: 'opacity-10 [background-image:repeating-linear-gradient(0deg,transparent,transparent_7px,#ffffff_7px,#ffffff_8px)]'
+    },
+    'Elite': {
+        bannerGradient: 'from-fuchsia-900 via-purple-900 to-indigo-950',
+        icon: 'diamond',
+        accentColor: '#E879F9',
+        pattern: 'opacity-20 [background-image:radial-gradient(circle_at_center,#ffffff_1px,transparent_1px)] [background-size:12px_12px]'
+    },
+    'Grandmaster': {
+        bannerGradient: 'from-orange-900 via-red-900 to-rose-950',
+        icon: 'military_tech',
+        accentColor: '#FB923C',
+        pattern: 'opacity-15 [background-image:linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] [background-size:30px_30px]'
+    },
+    'Legend': {
+        bannerGradient: 'from-yellow-600 via-amber-700 to-yellow-900',
+        icon: 'workspace_premium',
+        accentColor: '#FBBF24',
+        pattern: 'opacity-30 [background-image:url("https://www.transparenttextures.com/patterns/gold-scale.png")]'
+    }
+};
+
+const calculateVisualProgress = (score: number) => {
+    const milestones = [0, 100, 250, 500, 1000, 2500];
+    const segmentWidth = 100 / (milestones.length - 1); // 20% each segment
+
+    for (let i = 0; i < milestones.length - 1; i++) {
+        if (score >= milestones[i] && score < milestones[i + 1]) {
+            const segmentProgress = (score - milestones[i]) / (milestones[i + 1] - milestones[i]);
+            return (i * segmentWidth) + (segmentProgress * segmentWidth);
+        }
+    }
+    return 100;
+};
+
 export default function ProfileTab({
     profileExists,
     displayReputation,
@@ -21,18 +78,20 @@ export default function ProfileTab({
     nextRankName,
     progressToNext
 }: ProfileTabProps) {
+    const visualProgress = calculateVisualProgress(reputationScore);
+    const theme = RANK_THEMES[currentRankName] || RANK_THEMES['Apprentice'];
+
     return (
         <div className="space-y-8">
-            <div className="relative w-full h-64 rounded-3xl overflow-hidden cinematic-shadow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img alt="Cinematic Banner" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABcPunXsUHfXdwSaxe6TCjdEwYgRvCVp-R2a5i7Q4Ab6x7sqfLJLKA9l0wTzrvC6Vk8y7cc7guUUFlKBxy6yaHmLRyn_76h64saPzsIr2cuAce7SW7IBqr80-tmsGHaoLUHZ9fzkQZ4XM2xWhhIyzm_drwLZnMUzQ689gLfJoaPTfZ2k2Nbw_qEXTbCWfxrqzO3noiVL-ahLngKxMoAU26RQCCspE96kM-d2WCgNx7IggLNxwqsDHnP-OX0gbXMnsdO7KTbi6IQBE" />
+            <div className={`relative w-full h-64 rounded-3xl overflow-hidden cinematic-shadow bg-gradient-to-br ${theme.bannerGradient}`}>
+                <div className={`absolute inset-0 ${theme.pattern}`}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
-                            <span className="material-symbols-outlined text-4xl text-white">shield_person</span>
+                            <span className="material-symbols-outlined text-4xl text-white">{theme.icon}</span>
                         </div>
                         <div>
-                            <h1 className="text-4xl font-bold text-white tracking-tight">Elite Identity Profile</h1>
+                            <h1 className="text-4xl font-bold text-white tracking-tight">{currentRankName} Identity Profile</h1>
                             <p className="text-white/70 font-medium">Curated on-chain reputation for the Avalanche ecosystem</p>
                         </div>
                     </div>
@@ -40,10 +99,6 @@ export default function ProfileTab({
             </div>
             <div className="flex justify-between items-end mt-8 border-b border-white/10 pb-6 mb-6">
                 <div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-4 backdrop-blur-md text-white">
-                        <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                        Verified Elite
-                    </span>
                     <h2 className="text-3xl font-bold mb-1 text-white">Soulbound Reputation</h2>
                     <p className="text-white/70">Unified cross-subnet performance index.</p>
                 </div>
@@ -64,15 +119,15 @@ export default function ProfileTab({
                     )}
                 </div>
                 <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden p-1 border border-white/5">
-                    <div className="h-full bg-gradient-to-r from-[#8B82F6] to-fuchsia-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(139,130,246,0.5)]" style={{ width: `${progressToNext}%` }}></div>
+                    <div className="h-full bg-gradient-to-r from-[#8B82F6] to-fuchsia-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(139,130,246,0.5)]" style={{ width: `${visualProgress}%` }}></div>
                 </div>
-                <div className="flex justify-between text-[10px] text-white/40 uppercase font-bold tracking-widest">
+                <div className="flex justify-between text-[10px] text-white/40 uppercase font-bold tracking-widest px-2">
                     <span>Apprentice</span>
-                    <span className={reputationScore >= 200 ? 'text-white/80' : ''}>Voyager</span>
-                    <span className={reputationScore >= 400 ? 'text-white/80' : ''}>Master</span>
-                    <span className={reputationScore >= 600 ? 'text-white/80' : ''}>Elite</span>
-                    <span className={reputationScore >= 800 ? 'text-white/80' : ''}>Grandmaster</span>
-                    <span className={reputationScore >= 1000 ? 'text-white/80' : ''}>Legend</span>
+                    <span className={reputationScore >= 100 ? 'text-white/80' : ''}>Voyager</span>
+                    <span className={reputationScore >= 250 ? 'text-white/80' : ''}>Master</span>
+                    <span className={reputationScore >= 500 ? 'text-white/80' : ''}>Elite</span>
+                    <span className={reputationScore >= 1000 ? 'text-white/80' : ''}>Grandmaster</span>
+                    <span className={reputationScore >= 2500 ? 'text-white/80' : ''}>Legend</span>
                 </div>
             </div>
 
@@ -132,7 +187,7 @@ export default function ProfileTab({
                             { name: 'Master', exp: '250', missions: '10 Jobs' },
                             { name: 'Elite', exp: '500', missions: '20 Jobs' },
                             { name: 'Grandmaster', exp: '1000', missions: '40 Jobs' },
-                            { name: 'Legend', exp: '2500+', missions: '100+ Jobs' },
+                            { name: 'Legend', exp: '2500', missions: '100+ Jobs' },
                         ].map((milestone) => (
                             <div key={milestone.name} className="flex flex-col">
                                 <span className={`text-sm font-bold ${reputationScore >= parseInt(milestone.exp) ? 'text-white' : 'text-white/40'}`}>

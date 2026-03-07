@@ -25,8 +25,8 @@ Jobs are no longer just text. Enhanced metadata includes **Skill Tags** (e.g., S
 ### 3. Proof-of-Work Portfolio (Visual Resume)
 Every completed mission is a permanent entry in your professional history. We visualize these as a **Web3 Resume**, pulling directly from your successful Escrow settlements. This provides undeniable proof of competence for future clients.
 
-### 4. Dispute DAO (Decentralized Justice)
-Arbitration is decentralized. Instead of a single mediator, community voters can review raised disputes. This ensures that the resolution of high-stakes work is handled by the community of peers, making the system fully autonomous.
+### 4. Decentralized Professional Court (Juror System)
+Arbitration is handled by a decentralized court of peers. When a high-stakes job enters a `DISPUTED` state, the community acts as a jury. Using **Reputation-Weighted Voting**, jurors review evidence and determine the final escrow settlement (Release, Refund, or Split). This turns AVAXVERSE into a fully autonomous, trustless arbitration system.
 
 ---
 
@@ -62,7 +62,7 @@ AVAXVERSE is designed to be the "Super App for On-Chain Work", connecting multip
 |---|---|---|
 | **M1: Jobs** | ✅ Live | The core marketplace layer for high-stakes missions and long-term freelance contracts. |
 | **M2: Bounties** | ⚒️ Next | Simplified task layer for rapid bug bounties, design contests, and community micro-tasks. |
-| **M3: Governance** | ✅ Beta | The Democracy Protocol where DID holders vote on disputes, treasury, and protocol upgrades. |
+| **M3: Governance** | ✅ Beta | **Decentralized Professional Court.** The jurisdiction layer where DID holders act as jurors to resolve mission disputes. |
 | **M4: Portfolio** | 📅 Planned | Visualized Web3 resume pulling from your Reputation SBTs and ProofOfWork history. |
 | **M5: DeFi Layer** | 📅 Future | Reputation-boosted staking, yield-bearing escrows, and professional credit scoring. |
 | **M6: Collaboration** | 📅 Future | Integrated secure messaging, milestone tracking, and decentralized file storage. |
@@ -89,7 +89,7 @@ AVAXVERSE is designed to be the "Super App for On-Chain Work", connecting multip
 - [x] On-chain Identity (DIDs)
 - [x] Soulbound Reputation Engine
 - [x] Multi-stage Escrow Contracts
-- [x] Governance Demo (Democracy Protocol)
+- [x] Governance Demo (Professional Court Flow)
 
 ### Phase 2: Growth (Q2 2026)
 - [ ] Bounties & Contests Module

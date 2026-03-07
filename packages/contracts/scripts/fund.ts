@@ -4,7 +4,8 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const targetAddresses = [
     "0x8e133dF53EaC0211B9b57dCB4CF616bACB0a59f9",
-    "0xD9b2AbEf89758Dc0B17D43934BEDBF4517F1FcCa"
+    "0xD9b2AbEf89758Dc0B17D43934BEDBF4517F1FcCa",
+    "0x4B8a85C6DaF42ceaeFf6EF76B5A6867EfD4017B0"
   ];
 
   for (const targetAddress of targetAddresses) {
