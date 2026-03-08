@@ -4,11 +4,20 @@ import { useEffect } from "react"
 
 export default function Parallax() {
   useEffect(() => {
+    let ticking = false
+
     const handleScroll = () => {
-      document.body.style.setProperty("--scroll-y", `${window.scrollY}px`)
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          document.body.style.setProperty("--scroll-y", `${window.scrollY}px`)
+          ticking = false
+        })
+        ticking = true
+      }
     }
 
-    window.addEventListener("scroll", handleScroll)
+    // Use passive listener to improve scroll performance
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
