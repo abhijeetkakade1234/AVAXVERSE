@@ -1,0 +1,4 @@
+## 2026-03-08 - [DoS in Escrow Resolve Dispute Split]
+**Vulnerability:** The `resolveDisputeSplit` function used `require` statements with `.call` for sending ETH to multiple parties (`feeRecipient`, `client`, `freelancer`). If any transfer failed (e.g., recipient is a smart contract that rejects ETH or consumes too much gas), the entire transaction reverted, permanently locking the funds.
+**Learning:** Using `require` with `.call` for ETH transfers in functions that update state or pay multiple parties introduces a Denial of Service vulnerability.
+**Prevention:** Always use a pull-over-push pattern for ETH transfers when interacting with untrusted addresses. If push must be used, do not revert the transaction on transfer failure. Instead, store the failed transfer amount in a mapping (`pendingWithdrawals`) and allow the user to manually withdraw it later.

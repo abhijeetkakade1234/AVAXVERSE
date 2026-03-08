@@ -210,18 +210,14 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
     if (fee > 0 && feeRecipient != address(0)) {
       (bool feeOk, ) = feeRecipient.call{value: fee}('');
-      require(feeOk, 'Escrow: fee transfer failed');
+      if (!feeOk) {
+        pendingWithdrawals[feeRecipient] += fee;
+        emit WithdrawalFailed(feeRecipient, fee);
+      }
     }
 
-    if (clientPayout > 0) {
-      (bool cOk, ) = client.call{value: clientPayout}('');
-      require(cOk, 'Escrow: client payout failed');
-    }
-
-    if (freelancerPayout > 0) {
-      (bool fOk, ) = freelancer.call{value: freelancerPayout}('');
-      require(fOk, 'Escrow: freelancer payout failed');
-    }
+    _safeTransfer(client, clientPayout);
+    _safeTransfer(freelancer, freelancerPayout);
 
     // Notify factory for reputation
     if (factory != address(0)) {
