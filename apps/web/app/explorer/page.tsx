@@ -307,7 +307,10 @@ export default function ExplorerPage() {
     )
 }
 
-function SubnetGridCard({
+// ⚡ Bolt: Wrapped SubnetGridCard in React.memo to prevent unnecessary re-renders.
+// Since ExplorerPage frequently re-renders on every search input keystroke or when gas stats update,
+// memoizing this heavy UI component ensures it only re-renders when its specific subnet data actually changes.
+const SubnetGridCard = React.memo(function SubnetGridCard({
     name, type, health, statusIcon, statusColor,
     latency, validators, tps = 0, loadBalance, loadColor,
     loadBars, url, opacityClass = "",
@@ -394,4 +397,4 @@ function SubnetGridCard({
             </a>
         </div>
     )
-}
+});
