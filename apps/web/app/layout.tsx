@@ -6,7 +6,11 @@ import { ThemeProvider } from "@/components/ThemeProvider"
 
 export const metadata = {
   title: "AVAXVERSE",
-  description: "Avalanche Operating Layer",
+  description: "Avalanche Operating Layer for Identity, Work, and Finance.",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 }
 
 export default function RootLayout({
