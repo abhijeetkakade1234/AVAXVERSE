@@ -209,18 +209,15 @@ contract Escrow is IEscrow, ReentrancyGuard {
     _state = State.RELEASED;
 
     if (fee > 0 && feeRecipient != address(0)) {
-      (bool feeOk, ) = feeRecipient.call{value: fee}('');
-      require(feeOk, 'Escrow: fee transfer failed');
+      _safeTransfer(feeRecipient, fee);
     }
 
     if (clientPayout > 0) {
-      (bool cOk, ) = client.call{value: clientPayout}('');
-      require(cOk, 'Escrow: client payout failed');
+      _safeTransfer(client, clientPayout);
     }
 
     if (freelancerPayout > 0) {
-      (bool fOk, ) = freelancer.call{value: freelancerPayout}('');
-      require(fOk, 'Escrow: freelancer payout failed');
+      _safeTransfer(freelancer, freelancerPayout);
     }
 
     // Notify factory for reputation
