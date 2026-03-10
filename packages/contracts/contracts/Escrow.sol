@@ -208,20 +208,20 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
     _state = State.RELEASED;
 
+    // Security Fix (Sentinel): Prevent DoS from reverting external calls.
+    // We do not `require` the transfer success here to avoid a malicious party
+    // (e.g., a reverting receive() function) from permanently locking the escrow.
+    // Failed transfers are credited to `pendingWithdrawals` via `_safeTransfer`.
     if (fee > 0 && feeRecipient != address(0)) {
       (bool feeOk, ) = feeRecipient.call{value: fee}('');
-      require(feeOk, 'Escrow: fee transfer failed');
+      if (!feeOk) {
+        pendingWithdrawals[feeRecipient] += fee;
+        emit WithdrawalFailed(feeRecipient, fee);
+      }
     }
 
-    if (clientPayout > 0) {
-      (bool cOk, ) = client.call{value: clientPayout}('');
-      require(cOk, 'Escrow: client payout failed');
-    }
-
-    if (freelancerPayout > 0) {
-      (bool fOk, ) = freelancer.call{value: freelancerPayout}('');
-      require(fOk, 'Escrow: freelancer payout failed');
-    }
+    _safeTransfer(client, clientPayout);
+    _safeTransfer(freelancer, freelancerPayout);
 
     // Notify factory for reputation
     if (factory != address(0)) {
