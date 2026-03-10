@@ -58,11 +58,16 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                         <p className="text-[#4B5563] dark:text-[#9CA3AF] mt-2">Browse the track record and concluded smart-contract engagements.</p>
                     </div>
 
-                    <div className="flex p-1.5 bg-white/30 dark:bg-black/20 backdrop-blur-md rounded-2xl border border-white/20 w-fit overflow-x-auto">
+                    <div
+                        role="group"
+                        aria-label="Filter missions by status"
+                        className="flex p-1.5 bg-white/30 dark:bg-black/20 backdrop-blur-md rounded-2xl border border-white/20 w-fit overflow-x-auto"
+                    >
                         {(['All', 'Active', 'Completed', 'Disputed'] as const).map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
+                                aria-pressed={filter === f}
                                 className={`px-4 py-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${filter === f
                                     ? 'bg-white dark:bg-surface-dark shadow-sm text-[#8B82F6]'
                                     : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'
