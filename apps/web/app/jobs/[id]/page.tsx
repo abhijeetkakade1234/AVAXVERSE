@@ -44,14 +44,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const [evidenceUrl, setEvidenceUrl] = useState('') // keeping this only for the CounterEvidence UI which still needs it
     const { propose } = useGovernance()
 
-    const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000))
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentTime(Math.floor(Date.now() / 1000))
-        }, 1000)
-        return () => clearInterval(interval)
-    }, [])
 
     const { data: job, isLoading: isJobLoading, refetch: refetchJob } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -678,39 +670,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                         setLocalError(null)
                                                     }}
                                                 />
-                                                {(() => {
-                                                    const lastApp = jobLastApp ?? 0n
-                                                    const cooldown = jobCooldown ?? 0n
-                                                    const isLocked = lastApp > 0n && BigInt(currentTime) < lastApp + cooldown
-                                                    const remaining = Number(lastApp + cooldown - BigInt(currentTime))
-
-                                                    if (isLocked) {
-                                                        const m = Math.floor(remaining / 60)
-                                                        const s = remaining % 60
-                                                        return (
-                                                            <div className="w-full py-4 rounded-xl bg-primary/5 border border-primary/20 text-text-muted-light dark:text-text-muted-dark font-mono text-center text-sm flex items-center justify-center gap-2">
-                                                                <span className="animate-pulse">⏳</span> Application Cooldown: {m}:{s.toString().padStart(2, '0')}
-                                                            </div>
-                                                        )
-                                                    }
-
-                                                    return (
-                                                        <button
-                                                            onClick={() => {
-                                                                const proposal = proposalURI.trim()
-                                                                if (!proposal) {
-                                                                    setLocalError('Proposal is required to apply.')
-                                                                    return
-                                                                }
-                                                                handleApply(proposal, userRequiredStake ?? BigInt(0))
-                                                            }}
-                                                            disabled={isTxBusy}
-                                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse"
-                                                        >
-                                                            {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
-                                                        </button>
-                                                    )
-                                                })()}
+                                                <ApplicationAction
+                                                    jobLastApp={jobLastApp}
+                                                    jobCooldown={jobCooldown}
+                                                    isTxBusy={isTxBusy}
+                                                    onApply={() => {
+                                                        const proposal = proposalURI.trim()
+                                                        if (!proposal) {
+                                                            setLocalError('Proposal is required to apply.')
+                                                            return
+                                                        }
+                                                        handleApply(proposal, userRequiredStake ?? BigInt(0))
+                                                    }}
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -1104,4 +1076,50 @@ function getDeliverableHref(value: string) {
 function shortAddr(addr: string) {
     if (!addr || addr.length < 12) return addr
     return `${addr.slice(0, 8)}...${addr.slice(-6)}`
+}
+
+function ApplicationAction({
+    jobLastApp,
+    jobCooldown,
+    isTxBusy,
+    onApply,
+}: {
+    jobLastApp?: bigint
+    jobCooldown?: bigint
+    isTxBusy: boolean
+    onApply: () => void
+}) {
+    const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000))
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(Math.floor(Date.now() / 1000))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [])
+
+    const lastApp = jobLastApp ?? 0n
+    const cooldown = jobCooldown ?? 0n
+    const isLocked = lastApp > 0n && BigInt(currentTime) < lastApp + cooldown
+    const remaining = Number(lastApp + cooldown - BigInt(currentTime))
+
+    if (isLocked) {
+        const m = Math.floor(remaining / 60)
+        const s = remaining % 60
+        return (
+            <div className="w-full py-4 rounded-xl bg-primary/5 border border-primary/20 text-text-muted-light dark:text-text-muted-dark font-mono text-center text-sm flex items-center justify-center gap-2">
+                <span className="animate-pulse">⏳</span> Application Cooldown: {m}:{s.toString().padStart(2, '0')}
+            </div>
+        )
+    }
+
+    return (
+        <button
+            onClick={onApply}
+            disabled={isTxBusy}
+            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse"
+        >
+            {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
+        </button>
+    )
 }
