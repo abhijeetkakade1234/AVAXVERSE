@@ -44,7 +44,10 @@ function StateBadge({ state }: { state: EscrowState }) {
     )
 }
 
-function JobCard({ jobId, job }: { jobId: bigint; job: Job }) {
+// ⚡ Bolt Performance Optimization:
+// Memoizing JobCard prevents up to 100 expensive re-renders (involving Wagmi useReadContract hooks)
+// on every keystroke in the search input or filter changes.
+const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job: Job }) {
     const { data: state } = useReadContract({
         address: (job.escrow ?? '0x0') as `0x${string}`,
         abi: ESCROW_ABI,
@@ -107,7 +110,7 @@ function JobCard({ jobId, job }: { jobId: bigint; job: Job }) {
             </div>
         </Link>
     )
-}
+})
 
 export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFilter }: {
     search: string

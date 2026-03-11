@@ -14,7 +14,10 @@ const JOB_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', '
 const TIMELINE_STATES: EscrowState[] = ['FUNDED', 'SUBMITTED', 'APPROVED', 'RELEASED']
 
 // ─── Manage Job Card ──────────────────────────────────────────────────────────
-function ManageJobCard({ jobId, job, address }: { jobId: bigint; job: Job; address: string }) {
+// ⚡ Bolt Performance Optimization:
+// Memoizing ManageJobCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when switching between active/history tabs or during pagination.
+const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }: { jobId: bigint; job: Job; address: string }) {
     const { data: state } = useReadContract({
         address: (job.escrow ?? '0x0') as `0x${string}`,
         abi: ESCROW_ABI,
@@ -97,7 +100,7 @@ function ManageJobCard({ jobId, job, address }: { jobId: bigint; job: Job; addre
             </div>
         </div>
     )
-}
+})
 
 // ─── Manage Jobs ──────────────────────────────────────────────────────────────
 export default function ManageJobs({ address }: { address: string }) {
