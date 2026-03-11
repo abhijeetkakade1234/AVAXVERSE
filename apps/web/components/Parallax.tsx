@@ -17,7 +17,7 @@ export default function Parallax() {
       }
     }
 
-    // Add passive: true to improve scroll performance
+    // Use passive listener to improve scroll performance
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
