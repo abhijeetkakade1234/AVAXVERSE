@@ -7,7 +7,7 @@ import {
     darkTheme,
     connectorsForWallets,
 } from '@rainbow-me/rainbowkit'
-import { coreWallet } from '@rainbow-me/rainbowkit/wallets'
+import { coreWallet, metaMaskWallet, trustWallet, walletConnectWallet, rainbowWallet } from '@rainbow-me/rainbowkit/wallets'
 import { createConfig } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ACTIVE_CHAIN } from '@/lib/config'
@@ -22,7 +22,11 @@ const connectors = connectorsForWallets(
     [
         {
             groupName: 'Recommended',
-            wallets: [coreWallet],
+            wallets: [coreWallet, metaMaskWallet, rainbowWallet],
+        },
+        {
+            groupName: 'Other Wallets',
+            wallets: [trustWallet, walletConnectWallet],
         },
     ],
     {

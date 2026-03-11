@@ -9,6 +9,7 @@ export default function Parallax() {
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
+          // Update CSS variable only once per frame to prevent layout thrashing
           document.body.style.setProperty("--scroll-y", `${window.scrollY}px`)
           ticking = false
         })
