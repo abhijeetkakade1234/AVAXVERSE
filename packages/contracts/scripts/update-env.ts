@@ -23,6 +23,7 @@ async function main() {
     NEXT_PUBLIC_ESCROW_FACTORY: addresses.EscrowFactory,
     NEXT_PUBLIC_AVAX_TOKEN: addresses.AVAXToken,
     NEXT_PUBLIC_AVAX_GOVERNOR: addresses.AVAXGovernor,
+    NEXT_PUBLIC_NETWORK: addresses.network || 'localhost',
   };
 
   let newEnvContent = envContent;

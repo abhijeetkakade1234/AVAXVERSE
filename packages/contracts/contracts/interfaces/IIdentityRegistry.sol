@@ -20,6 +20,10 @@ interface IIdentityRegistry {
   event ProfileRegistered(address indexed user, string did, uint256 timestamp);
   event ProfileUpdated(address indexed user, string name, string pfp, string metadataURI);
   event ReputationUpdated(address indexed user, uint256 newScore);
+  event NameReserved(address indexed user, string name);
+  event NameReleased(string name);
+
+  error NameAlreadyTaken(string name);
 
   function register(
     string calldata name,
@@ -35,4 +39,5 @@ interface IIdentityRegistry {
   function incrementReputation(address user, uint256 amount) external;
   function getProfile(address user) external view returns (Profile memory);
   function hasProfile(address user) external view returns (bool);
+  function isNameAvailable(string calldata name) external view returns (bool);
 }

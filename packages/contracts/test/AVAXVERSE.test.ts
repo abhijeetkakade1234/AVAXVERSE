@@ -66,6 +66,38 @@ describe('IdentityRegistry', () => {
       registry.connect(bob).incrementReputation(alice.address, 10),
     ).to.be.revertedWith('IdentityRegistry: not authorized')
   })
+
+  it('enforces unique usernames', async () => {
+    const { alice, bob, registry } = await deployContracts()
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice')
+    
+    // Existing name
+    expect(await registry.isNameAvailable('Alice')).to.be.false
+    
+    // Bob tries to register Alice's name
+    await expect(
+      registry.connect(bob).register('Alice', 'ipfs://pfp-bob', 'ipfs://bob')
+    ).to.be.revertedWithCustomError(registry, 'NameAlreadyTaken')
+  })
+
+  it('allows taking a released name after update', async () => {
+    const { alice, bob, registry } = await deployContracts()
+    await registry.connect(alice).register('Alice', 'ipfs://pfp', 'ipfs://alice')
+    
+    // Alice changes name to Alison
+    await registry.connect(alice).updateProfile('Alison', 'ipfs://pfp', 'ipfs://alice')
+    expect(await registry.isNameAvailable('Alice')).to.be.true
+    
+    // Bob can now take Alice's old name
+    await registry.connect(bob).register('Alice', 'ipfs://pfp-bob', 'ipfs://bob')
+    const bobProfile = await registry.getProfile(bob.address)
+    expect(bobProfile.name).to.equal('Alice')
+  })
+
+  it('isNameAvailable returns false for empty string', async () => {
+    const { registry } = await deployContracts()
+    expect(await registry.isNameAvailable('')).to.be.false
+  })
 })
 
 describe('ReputationToken', () => {

@@ -60,6 +60,31 @@ export const IDENTITY_REGISTRY_ABI = [
     outputs: [{ type: 'bool' }],
   },
   {
+    name: 'isNameAvailable',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'name', type: 'string' }],
+    outputs: [{ type: 'bool' }],
+  },
+  {
+    name: 'NameReserved',
+    type: 'event',
+    inputs: [
+      { name: 'user', type: 'address', indexed: true },
+      { name: 'name', type: 'string', indexed: false },
+    ],
+  },
+  {
+    name: 'NameReleased',
+    type: 'event',
+    inputs: [{ name: 'name', type: 'string', indexed: false }],
+  },
+  {
+    name: 'NameAlreadyTaken',
+    type: 'error',
+    inputs: [{ name: 'name', type: 'string' }],
+  },
+  {
     name: 'ProfileRegistered',
     type: 'event',
     inputs: [

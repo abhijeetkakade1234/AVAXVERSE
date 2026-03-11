@@ -53,7 +53,7 @@ export default function Footer() {
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
                             <a href="https://x.com/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
                             <a className="hover:text-primary transition-colors cursor-pointer">Discord</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
+                            <a href="https://github.com/abhijeetkakade1234/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
                         </div>
                     </div>
                 </div>
@@ -62,7 +62,7 @@ export default function Footer() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-medium text-gray-500">
                 <div className="flex items-center gap-3 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 px-4 py-2 rounded-full border border-green-200 dark:border-green-800/30">
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
-                    Systems Operational
+                    <span className="uppercase font-bold">{process.env.NEXT_PUBLIC_NETWORK || 'Avalanche'}</span> Systems Operational
                 </div>
                 <p suppressHydrationWarning>© {new Date().getFullYear()} AVAXVERSE Ecosystem. All rights reserved.</p>
                 <div className="flex gap-8">
