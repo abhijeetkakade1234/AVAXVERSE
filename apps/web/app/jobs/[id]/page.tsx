@@ -991,7 +991,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     )
 }
 
-function ApplicantRow({
+// ⚡ Bolt Performance Optimization:
+// Memoizing ApplicantRow prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when parent state updates.
+const ApplicantRow = React.memo(function ApplicantRow({
     jobId,
     operator,
     canSelect,
@@ -1055,9 +1058,12 @@ function ApplicantRow({
             )}
         </div>
     )
-}
+})
 
-function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
+// ⚡ Bolt Performance Optimization:
+// Memoizing PartyProfileCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when parent state updates.
+const PartyProfileCard = React.memo(function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
     const { data: profile } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,
         abi: IDENTITY_REGISTRY_ABI,
@@ -1086,7 +1092,7 @@ function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
             </Link>
         </div>
     )
-}
+})
 
 function getDeliverableHref(value: string) {
     const v = value.trim()
