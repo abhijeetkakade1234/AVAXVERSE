@@ -1,6 +1,6 @@
 'use client'
 
-import React, { use, useEffect, useState } from 'react'
+import React, { use, useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ExternalLink, Zap } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
@@ -194,6 +194,44 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         query: { enabled: !!connectedAddress },
     }) as { data: bigint | undefined }
 
+    const handleApply = (proposal: string, stake: bigint) => {
+        writeContract({
+            address: CONTRACT_ADDRESSES.EscrowFactory,
+            abi: ESCROW_FACTORY_ABI,
+            functionName: 'applyToJob',
+            args: [jobId, proposal],
+            value: stake,
+        })
+    }
+
+    const handleSelectOperator = useCallback((operator: string) => {
+        writeContract({
+            address: CONTRACT_ADDRESSES.EscrowFactory,
+            abi: ESCROW_FACTORY_ABI,
+            functionName: 'selectOperator',
+            args: [jobId, operator as `0x${string}`],
+        })
+    }, [jobId, writeContract])
+
+    const handleAcceptAssignment = () => {
+        writeContract({
+            address: CONTRACT_ADDRESSES.EscrowFactory,
+            abi: ESCROW_FACTORY_ABI,
+            functionName: 'acceptAssignment',
+            args: [jobId],
+        })
+    }
+
+    const handleFundEscrow = () => {
+        writeContract({
+            address: CONTRACT_ADDRESSES.EscrowFactory,
+            abi: ESCROW_FACTORY_ABI,
+            functionName: 'fundEscrow',
+            args: [jobId],
+            value: job?.budget ?? 0n,
+        })
+    }
+
     if (isJobLoading) {
         return (
             <main className="min-h-screen bg-background-light dark:bg-background-dark pt-40 flex items-center justify-center">
@@ -236,44 +274,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         return 0
     })()
 
-
-    const handleApply = (proposal: string, stake: bigint) => {
-        writeContract({
-            address: CONTRACT_ADDRESSES.EscrowFactory,
-            abi: ESCROW_FACTORY_ABI,
-            functionName: 'applyToJob',
-            args: [jobId, proposal],
-            value: stake,
-        })
-    }
-
-    const handleSelectOperator = (operator: string) => {
-        writeContract({
-            address: CONTRACT_ADDRESSES.EscrowFactory,
-            abi: ESCROW_FACTORY_ABI,
-            functionName: 'selectOperator',
-            args: [jobId, operator as `0x${string}`],
-        })
-    }
-
-    const handleAcceptAssignment = () => {
-        writeContract({
-            address: CONTRACT_ADDRESSES.EscrowFactory,
-            abi: ESCROW_FACTORY_ABI,
-            functionName: 'acceptAssignment',
-            args: [jobId],
-        })
-    }
-
-    const handleFundEscrow = (budget: bigint) => {
-        writeContract({
-            address: CONTRACT_ADDRESSES.EscrowFactory,
-            abi: ESCROW_FACTORY_ABI,
-            functionName: 'fundEscrow',
-            args: [jobId],
-            value: budget,
-        })
-    }
 
 
     const handleReopenJob = () => {
@@ -554,7 +554,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                     operator={addr}
                                                     canSelect={!!isClient}
                                                     isBusy={isTxBusy}
-                                                    onSelect={() => handleSelectOperator(addr)}
+                                                    onSelect={handleSelectOperator}
                                                 />
                                             ))}
                                         </div>
@@ -754,7 +754,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             {job.operatorAccepted ? 'Selected operator has accepted. You can fund escrow now.' : 'Waiting for selected operator to accept assignment.'}
                                         </p>
                                         <button
-                                            onClick={() => handleFundEscrow(job.budget)}
+                                            onClick={() => handleFundEscrow()}
                                             disabled={isTxBusy || !job.operatorAccepted}
                                             className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40 shadow-lg shadow-emerald-500/20"
                                         >
@@ -991,7 +991,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     )
 }
 
-function ApplicantRow({
+// ⚡ Bolt Performance Optimization:
+// Memoizing ApplicantRow prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when parent state updates.
+const ApplicantRow = React.memo(function ApplicantRow({
     jobId,
     operator,
     canSelect,
@@ -1002,7 +1005,7 @@ function ApplicantRow({
     operator: string
     canSelect: boolean
     isBusy: boolean
-    onSelect: () => void
+    onSelect: (operator: string) => void
 }) {
     const { data: application } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -1049,15 +1052,18 @@ function ApplicantRow({
             )}
 
             {canSelect && (
-                <button onClick={onSelect} disabled={isBusy} className="w-full py-2 rounded-lg bg-primary text-white text-sm font-bold disabled:opacity-40">
+                <button onClick={() => onSelect(operator)} disabled={isBusy} className="w-full py-2 rounded-lg bg-primary text-white text-sm font-bold disabled:opacity-40">
                     {isBusy ? 'Selecting...' : 'Select Operator'}
                 </button>
             )}
         </div>
     )
-}
+})
 
-function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
+// ⚡ Bolt Performance Optimization:
+// Memoizing PartyProfileCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when parent state updates.
+const PartyProfileCard = React.memo(function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
     const { data: profile } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,
         abi: IDENTITY_REGISTRY_ABI,
@@ -1086,7 +1092,7 @@ function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
             </Link>
         </div>
     )
-}
+})
 
 function getDeliverableHref(value: string) {
     const v = value.trim()
