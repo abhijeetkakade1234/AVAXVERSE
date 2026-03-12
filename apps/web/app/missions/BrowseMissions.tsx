@@ -6,11 +6,11 @@ import { Globe, Briefcase, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, type EscrowState } from '@/lib/abis'
-import { type Job } from './types'
+import { type Mission } from './types'
 import Pagination from '@/components/ui/Pagination'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const JOB_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
+const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 
 const REWARD_BOUNDS: Record<string, [number, number]> = {
     'Any Reward': [0, Infinity],
@@ -45,34 +45,34 @@ function StateBadge({ state }: { state: EscrowState }) {
 }
 
 // ⚡ Bolt Performance Optimization:
-// Memoizing JobCard prevents up to 100 expensive re-renders (involving Wagmi useReadContract hooks)
+// Memoizing MissionCard prevents up to 100 expensive re-renders (involving Wagmi useReadContract hooks)
 // on every keystroke in the search input or filter changes.
-const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job: Job }) {
+const MissionCard = React.memo(function MissionCard({ missionId, mission }: { missionId: bigint; mission: Mission }) {
     const { data: state } = useReadContract({
-        address: (job.escrow ?? '0x0') as `0x${string}`,
+        address: (mission.escrow ?? '0x0') as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'getState',
-        query: { enabled: !!job.escrow && job.escrow !== ZERO_ADDRESS },
+        query: { enabled: !!mission.escrow && mission.escrow !== ZERO_ADDRESS },
     }) as { data: bigint | undefined }
 
     const stateIndex = state !== undefined ? Number(state) : undefined
     const stateName: EscrowState = stateIndex !== undefined ? ESCROW_STATES[stateIndex] : 'FUNDED'
-    const jobStatus = JOB_STATUS_LABELS[job.status] ?? 'OPEN'
+    const missionStatus = MISSION_STATUS_LABELS[mission.status] ?? 'OPEN'
 
-    let displayBadge: string = jobStatus
-    if (job.status === 3 && job.escrow !== ZERO_ADDRESS) {
+    let displayBadge: string = missionStatus
+    if (mission.status === 3 && mission.escrow !== ZERO_ADDRESS) {
         displayBadge = stateName
     }
 
-    const budgetAvax = Number(job.budget) / 1e18
+    const budgetAvax = Number(mission.budget) / 1e18
     const budgetDisplay = budgetAvax.toFixed(2)
-    const createdDate = job.createdAt > BigInt(0)
-        ? new Date(Number(job.createdAt) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    const createdDate = mission.createdAt > BigInt(0)
+        ? new Date(Number(mission.createdAt) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         : '-'
 
     return (
-        <Link href={`/missions/${jobId}`}>
-            <div className="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col h-full cursor-pointer group animate-enter">
+        <Link href={`/missions/${missionId}`}>
+            <div className="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col h-full cursor-pointer group animate-enter fluid-touch">
                 <div className="flex justify-between items-start mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                         <Briefcase size={24} />
@@ -85,7 +85,7 @@ const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job
                     </div>
                 </div>
 
-                <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors dark:text-white">{job.title}</h3>
+                <h3 className="text-xl font-bold mb-2 leading-tight group-hover:text-primary transition-colors dark:text-white">{mission.title}</h3>
                 <div className="flex items-center gap-2 mb-4">
                     {displayBadge === 'OPEN' || displayBadge === 'SELECTED' || displayBadge === 'ACCEPTED' || displayBadge === 'CANCELLED' || displayBadge === 'CLOSED'
                         ? <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">{displayBadge}</span>
@@ -96,11 +96,11 @@ const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job
                 <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
                     <div className="flex justify-between text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">
                         <span>Client</span>
-                        <span className="font-mono text-primary/70">{job.client.slice(0, 8)}...{job.client.slice(-6)}</span>
+                        <span className="font-mono text-primary/70">{mission.client.slice(0, 8)}...{mission.client.slice(-6)}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">
                         <span>Operator</span>
-                        <span className="font-mono text-primary/50 truncate max-w-[100px]">{job.freelancer === ZERO_ADDRESS ? 'UNASSIGNED' : `${job.freelancer.slice(0, 6)}...${job.freelancer.slice(-4)}`}</span>
+                        <span className="font-mono text-primary/50 truncate max-w-[100px]">{mission.freelancer === ZERO_ADDRESS ? 'UNASSIGNED' : `${mission.freelancer.slice(0, 6)}...${mission.freelancer.slice(-4)}`}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest">
                         <span>Posted</span>
@@ -112,7 +112,7 @@ const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job
     )
 })
 
-export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFilter }: {
+export default function BrowseMissions({ search, stateFilter, rewardFilter, statusFilter }: {
     search: string
     stateFilter: string
     rewardFilter: string
@@ -131,13 +131,13 @@ export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFi
 
     const pageSize = 100
 
-    const { data: totalJobsCount } = useReadContract({
+    const { data: totalMissionsCount } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'totalJobs',
     })
 
-    const totalCount = Number(totalJobsCount ?? 0)
+    const totalCount = Number(totalMissionsCount ?? 0)
 
     // We fetch the last 150 IDs to keep performance stable in the browser
     // even without a real backend indexer.
@@ -154,39 +154,39 @@ export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFi
         args: [id],
     })), [ids])
 
-    const { data: jobsResult, isLoading } = useReadContracts({
+    const { data: missionsResult, isLoading } = useReadContracts({
         contracts,
     })
 
-    const allJobs = useMemo(() => {
-        if (!jobsResult) return []
-        return jobsResult.map((res, i) => ({
+    const allMissions = useMemo(() => {
+        if (!missionsResult) return []
+        return missionsResult.map((res, i) => ({
             id: ids[i],
-            job: res.result as unknown as Job,
-        })).filter(x => !!x.job)
-    }, [jobsResult, ids])
+            mission: res.result as unknown as Mission,
+        })).filter(x => !!x.mission)
+    }, [missionsResult, ids])
 
-    const filteredJobs = useMemo(() => {
-        return allJobs.filter(({ job }) => {
+    const filteredMissions = useMemo(() => {
+        return allMissions.filter(({ mission }) => {
             // Title search
-            if (search && !job.title.toLowerCase().includes(search.toLowerCase())) return false
+            if (search && !mission.title.toLowerCase().includes(search.toLowerCase())) return false
 
             // Specialization filter
             if (stateFilter && stateFilter !== 'All') {
                 const keywords = SPECIALIZATION_KEYWORDS[stateFilter] ?? []
-                const titleText = job.title.toLowerCase()
+                const titleText = mission.title.toLowerCase()
                 if (!keywords.some(keyword => titleText.includes(keyword))) return false
             }
 
             // Reward Filter
-            const budgetAvax = Number(job.budget) / 1e18
+            const budgetAvax = Number(mission.budget) / 1e18
             const [minAvax, maxAvax] = REWARD_BOUNDS[rewardFilter] ?? [0, Infinity]
             if (budgetAvax < minAvax || budgetAvax > maxAvax) return false
 
             // Status Filter
             if (statusFilter && statusFilter !== 'All Statuses') {
-                const isCompleted = job.status >= 4 // CLOSED/CANCELLED are base completions
-                const isOpen = job.status === 0
+                const isCompleted = mission.status >= 4 // CLOSED/CANCELLED are base completions
+                const isOpen = mission.status === 0
                 const isInProgress = !isOpen && !isCompleted
 
                 if (statusFilter === 'Open' && !isOpen) return false
@@ -196,13 +196,13 @@ export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFi
 
             return true
         })
-    }, [allJobs, search, stateFilter, rewardFilter, statusFilter])
+    }, [allMissions, search, stateFilter, rewardFilter, statusFilter])
 
-    const totalPages = Math.ceil(filteredJobs.length / pageSize)
-    const paginatedJobs = useMemo(() => {
+    const totalPages = Math.ceil(filteredMissions.length / pageSize)
+    const paginatedMissions = useMemo(() => {
         const start = (currentPage - 1) * pageSize
-        return filteredJobs.slice(start, start + pageSize)
-    }, [filteredJobs, currentPage, pageSize])
+        return filteredMissions.slice(start, start + pageSize)
+    }, [filteredMissions, currentPage, pageSize])
 
 
     if (isLoading && totalCount > 0) {
@@ -215,7 +215,7 @@ export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFi
         )
     }
 
-    if (totalCount === 0 || (filteredJobs.length === 0 && !isLoading)) {
+    if (totalCount === 0 || (filteredMissions.length === 0 && !isLoading)) {
         return (
             <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-20 text-center animate-enter">
                 <Globe size={48} className="mx-auto mb-4 text-text-muted-light/20" />
@@ -227,8 +227,8 @@ export default function BrowseJobs({ search, stateFilter, rewardFilter, statusFi
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-enter">
-                {paginatedJobs.map(({ id, job }) => (
-                    <JobCard key={id.toString()} jobId={id} job={job} />
+                {paginatedMissions.map(({ id, mission }) => (
+                    <MissionCard key={id.toString()} missionId={id} mission={mission} />
                 ))}
             </div>
 

@@ -63,7 +63,7 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${filter === f
+                                className={`px-4 py-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap fluid-touch ${filter === f
                                     ? 'bg-white dark:bg-surface-dark shadow-sm text-[#8B82F6]'
                                     : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'
                                     }`}
@@ -104,7 +104,7 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                                                 <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Rewards</div>
                                             </div>
                                             <Link href={`/missions/${job.id}`}>
-                                                <button className="px-6 py-2.5 bg-[#8B82F6] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8B82F6]/25 hover:scale-105 active:scale-95 transition-transform">
+                                                <button className="px-6 py-2.5 bg-[#8B82F6] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8B82F6]/25 hover:scale-105 transition-transform active:scale-95 fluid-touch">
                                                     Mission Control
                                                 </button>
                                             </Link>

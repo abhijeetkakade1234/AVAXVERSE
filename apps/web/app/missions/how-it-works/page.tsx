@@ -9,12 +9,12 @@ import { Section } from '@/components/ui'
 
 const FAQ_ITEMS = [
     {
-        q: "Why do I need to pay a 'Commitment Deposit' to post a job?",
+        q: "Why do I need to pay a 'Commitment Deposit' to post a mission?",
         a: "The commitment deposit is an anti-spam measure. It ensures that only serious clients use the network's resources. This deposit is fully refunded to you once you fund the escrow for your selected operator. If you select an operator but fail to fund the mission within the timeout window, the deposit is forfeited to the operator as compensation for their reserved time."
     },
     {
         q: "How is the 'Operator Stake' calculated?",
-        a: "Operator stake is a security collateral. By default, it's a percentage of the job budget. However, AVAXVERSE rewards high-reputation users. For every 100 reputation points you earn, your required stake is dynamically reduced, making it easier for trusted veterans to secure more missions."
+        a: "Operator stake is a security collateral. By default, it's a percentage of the mission budget. However, AVAXVERSE rewards high-reputation users. For every 100 reputation points you earn, your required stake is dynamically reduced, making it easier for trusted veterans to secure more missions."
     },
     {
         q: "What happens if there is a dispute?",
@@ -48,7 +48,7 @@ const ROUTE_EXPLANATIONS = [
     },
     {
         icon: <Code2 className="text-blue-500" size={24} />,
-        title: "Explorer (/explorer)",
+        title: "Explore (/explore)",
         desc: "A specialized dashboard to track on-chain escrow states, historical payouts, and global network analytics. Total transparency for every mission."
     },
     {
@@ -222,7 +222,7 @@ export default function HowItWorksPage() {
                             <Rocket className="mx-auto mb-8 animate-bounce" size={64} />
                             <h2 className="text-4xl font-black mb-6 tracking-tight">Ready to Deploy?</h2>
                             <p className="text-white/80 max-w-xl mx-auto mb-10 text-lg font-medium leading-relaxed">
-                                Join the most secure job marketplace in the Avalanche ecosystem. Start building on the infrastructure of trust.
+                                Join the most secure mission marketplace in the Avalanche ecosystem. Start building on the infrastructure of trust.
                             </p>
                             <div className="flex flex-wrap justify-center gap-4">
                                 <Link href="/missions?tab=create" className="px-12 py-5 rounded-full bg-white text-primary font-black text-lg hover:scale-105 transition-all shadow-xl">

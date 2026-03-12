@@ -7,9 +7,9 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import BrowseJobs from './BrowseJobs'
-import CreateJob from './CreateJob'
-import ManageJobs from './ManageJobs'
+import BrowseMissions from './BrowseMissions'
+import CreateMission from './CreateMission'
+import ManageMissions from './ManageMissions'
 import Footer from '@/components/Footer'
 
 const SPECIALIZATIONS = ['All', 'DeFi', 'Subnets', 'Security', 'Infrastructure', 'Bridges']
@@ -18,7 +18,7 @@ const STATUS_FILTERS = ['All Statuses', 'Open', 'In Progress', 'Completed']
 
 import { Suspense } from 'react'
 
-function JobsContent() {
+function MissionsContent() {
     const { address, isConnected } = useAccount()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -61,19 +61,19 @@ function JobsContent() {
 
                     <div className="flex items-center bg-white/30 dark:bg-black/20 rounded-full px-2 py-1 shadow-sm border border-white/40 dark:border-white/10">
                         <button
-                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${tab === 'browse' ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
+                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors fluid-touch ${tab === 'browse' ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
                             onClick={() => switchTab('browse')}
                         >
                             Browse Ops
                         </button>
                         <button
-                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${tab === 'create' ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
+                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors fluid-touch ${tab === 'create' ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
                             onClick={() => switchTab('create')}
                         >
                             <span className="flex items-center gap-1.5"><Plus size={14} /> Post</span>
                         </button>
                         <button
-                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${(tab === 'manage' && isConnected) ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
+                            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors fluid-touch ${(tab === 'manage' && isConnected) ? 'bg-white dark:bg-surface-dark shadow-sm' : 'hover:bg-white dark:hover:bg-surface-dark'}`}
                             onClick={() => switchTab('manage')}
                         >
                             My Ops
@@ -131,7 +131,7 @@ function JobsContent() {
                                 </div>
                             </div>
 
-                            <BrowseJobs search={search} stateFilter={specialization} rewardFilter={rewardRange} statusFilter={statusFilter} />
+                            <BrowseMissions search={search} stateFilter={specialization} rewardFilter={rewardRange} statusFilter={statusFilter} />
                         </>
                     )}
 
@@ -153,8 +153,8 @@ function JobsContent() {
                         </div>
                     ) : (
                         <>
-                            {tab === 'create' && <CreateJob />}
-                            {tab === 'manage' && <ManageJobs address={address!} />}
+                            {tab === 'create' && <CreateMission />}
+                            {tab === 'manage' && <ManageMissions address={address!} />}
                         </>
                     )}
                 </div>
@@ -168,14 +168,14 @@ function JobsContent() {
     )
 }
 
-export default function JobsPage() {
+export default function MissionsPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
         }>
-            <JobsContent />
+            <MissionsContent />
         </Suspense>
     )
 }

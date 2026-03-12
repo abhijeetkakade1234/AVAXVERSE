@@ -12,7 +12,7 @@ import { ESCROW_FACTORY_ABI } from '@/lib/abis'
 
 const VALIDATOR_NETWORKS = ['Avalanche DAO Mainnet', 'Fuji Testnet', 'Private Subnet']
 
-export default function CreateJob() {
+export default function CreateMission() {
     const { showSnackbar } = useSnackbar()
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
@@ -271,7 +271,7 @@ export default function CreateJob() {
                     <button
                         onClick={handleSubmit}
                         disabled={!canSubmit}
-                        className="w-full max-w-md bg-primary hover:bg-primary/90 text-white py-5 px-8 rounded-3xl font-extrabold text-xl shadow-2xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 cinematic-shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                        className="w-full max-w-md bg-primary hover:bg-primary/90 text-white py-5 px-8 rounded-3xl font-extrabold text-xl shadow-2xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 cinematic-shadow disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 fluid-touch"
                     >
                         {isPending || isConfirming ? <span className="material-symbols-outlined animate-spin text-2xl">sync</span> : <span className="material-symbols-outlined text-2xl">rocket_launch</span>}
                         {isPending ? 'Signing Payload...' : isConfirming ? 'Publishing Mission...' : 'Post Mission'}

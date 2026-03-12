@@ -33,7 +33,7 @@ export default function Footer() {
                     <div className="flex flex-col gap-6">
                         <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Ecosystem</h4>
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
-                            <Link href="/explorer" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
+                            <Link href="/explore" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
                             <Link href="/governance" className="hover:text-primary transition-colors cursor-pointer">Governance</Link>
                             <Link href="/missions" className="hover:text-primary transition-colors cursor-pointer">Mission Hub</Link>
                             <Link href="/profile" className="hover:text-primary transition-colors cursor-pointer">My Career</Link>

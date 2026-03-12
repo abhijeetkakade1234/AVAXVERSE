@@ -40,10 +40,14 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
     // Username Validation States
     const [validatedName, setValidatedName] = useState(name);
 
-    // Validate when losing focus
-    const handleBlur = () => {
-        setValidatedName(name);
-    };
+    // Debounce username validation — always use setTimeout to avoid setState-in-effect errors
+    useEffect(() => {
+        const delay = !name.trim() || name === (profile?.name || '') ? 0 : 300;
+        const timer = setTimeout(() => {
+            setValidatedName(name);
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [name, profile?.name]);
 
     const { data: isNameAvailable, isLoading: isCheckingName } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,
@@ -60,16 +64,19 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
         return isNameAvailable === false;
     }, [validatedName, isNameAvailable, profile?.name]);
 
+    const isTyping = name !== validatedName;
+    const isChecking = isTyping || isCheckingName;
+
     const canSubmit = useMemo(() => {
         if (!name.trim()) return false;
-        // If typing matches validated name, use validation result
-        if (name === validatedName) {
+        // If typing matches validated name and not checking, use validation result
+        if (name === validatedName && !isChecking) {
             if (name === (profile?.name || '')) return true;
             return isNameAvailable === true;
         }
         // Otherwise, only allow submit if it's the original name
         return name === (profile?.name || '');
-    }, [name, validatedName, isNameAvailable, profile?.name]);
+    }, [name, validatedName, isChecking, isNameAvailable, profile?.name]);
 
     // Sync form with profile data when it loads
     useEffect(() => {
@@ -168,11 +175,16 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                 console.warn("Cannot save: Profile state unknown.");
             }
         } catch (error: unknown) {
-            console.error("Caught error during writeContract invocation:", error);
             const translated = translateError(error);
-            if (translated.includes('cancelled')) {
+            const isCancellation = 
+                translated.toLowerCase().includes('cancelled') || 
+                translated.toLowerCase().includes('denied') ||
+                translated.toLowerCase().includes('rejected');
+            
+            if (isCancellation) {
                 showSnackbar(translated, 'info');
             } else {
+                console.error("Caught error during writeContract invocation:", error);
                 showSnackbar(translated, 'error');
             }
         }
@@ -297,17 +309,16 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                             type="text"
                                             value={name}
                                             onChange={e => setName(e.target.value)}
-                                            onBlur={handleBlur}
                                             className={`w-full bg-white/50 dark:bg-black/20 border rounded-2xl p-4 text-gray-900 dark:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#8B82F6] ${isNameTaken ? 'border-red-500/50 ring-red-500/20' : 'border-white/40 dark:border-white/10'
                                                 }`}
                                             placeholder="e.g. Alex.avax"
                                             required
                                         />
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                            {isCheckingName && (
+                                            {isChecking && (
                                                 <Loader2 className="animate-spin text-[#8B82F6]" size={18} />
                                             )}
-                                            {!isCheckingName && name && name !== (profile?.name || '') && (
+                                            {!isChecking && name && name !== (profile?.name || '') && (
                                                 isNameTaken ? (
                                                     <span className="text-red-500 text-xs font-bold uppercase flex items-center gap-1">
                                                         <span className="material-symbols-outlined text-sm">cancel</span>
@@ -446,7 +457,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(false)}
-                                    className="flex-1 py-4 px-6 rounded-2xl font-bold bg-white/20 dark:bg-[#1E1B4B] text-gray-900 dark:text-[#F3F4F6] hover:bg-white/40 dark:hover:bg-white/10 transition-colors border border-white/40 dark:border-white/10"
+                                    className="flex-1 py-4 px-6 rounded-2xl font-bold bg-white/20 dark:bg-[#1E1B4B] text-gray-900 dark:text-[#F3F4F6] hover:bg-white/40 dark:hover:bg-white/10 transition-colors border border-white/40 dark:border-white/10 fluid-touch"
                                     disabled={isPending || isConfirming || isProfileLoading}
                                 >
                                     Cancel
@@ -454,7 +465,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 <button
                                     type="submit"
                                     disabled={isPending || isConfirming || isProfileLoading || !canSubmit}
-                                    className="flex-1 flex justify-center items-center gap-2 bg-[#8B82F6] hover:bg-[#8B82F6]/90 text-white py-4 px-6 rounded-2xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    className="flex-1 flex justify-center items-center gap-2 bg-[#8B82F6] hover:bg-[#8B82F6]/90 text-white py-4 px-6 rounded-2xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all fluid-touch"
                                 >
                                     {isPending || isConfirming ? (
                                         <>

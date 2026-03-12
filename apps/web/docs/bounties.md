@@ -1,9 +1,15 @@
 # Bounties
 
-Open-source contributions and community-driven tasks. Find meaningful ways to contribute to the AVAXVERSE and earn rewards for your expertise.
+Decentralized reward systems for ecosystem contributions. Earn AVAX by solving public challenges and fortifying the network.
 
-## Categories
-- Code Contributions
-- Community Growth
-- Technical Writing
-- Bug Hunting
+## Bounty Types
+- **Bug Bounties**: Identify vulnerabilities and secure protocol perimeters.
+- **Research Challenges**: Design the future of Avalanche subnets and L1 solutions.
+- **Community Tasks**: Drive adoption through education and tooling.
+- **Developer Quests**: Build innovative modules for the AVAXVERSE stack.
+
+## How to Earn
+1. Browse open challenges.
+2. Formulate your solution.
+3. Submit proof of contribution.
+4. Receive automated on-chain rewards.

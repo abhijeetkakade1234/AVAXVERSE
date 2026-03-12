@@ -2,7 +2,7 @@
 
 import React, { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink, Zap } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Zap, Target } from 'lucide-react'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther, encodeFunctionData } from 'viem'
 import { useSnackbar } from '@/context/SnackbarContext'
@@ -12,12 +12,12 @@ import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, IDENTITY_REGISTRY_ABI, t
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'
-import { type Job, type JobApplication } from '../types'
+import { type Mission, type MissionApplication } from '../types'
 import { useGovernance } from '@/hooks/useGovernance'
 import { DisputeModal } from '@/components/DisputeModal'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const JOB_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
+const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 const FLOW_STEPS = ['Posted', 'Applied', 'Selected', 'Accepted', 'Funded', 'Delivered', 'Closed'] as const
 
 type Profile = {
@@ -31,9 +31,9 @@ type Profile = {
     exists: boolean
 }
 
-export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function MissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
-    const jobId = BigInt(id)
+    const missionId = BigInt(id)
     const { address: connectedAddress } = useAccount()
 
     const [proposalURI, setProposalURI] = useState('')
@@ -53,30 +53,30 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         return () => clearInterval(interval)
     }, [])
 
-    const { data: job, isLoading: isJobLoading, refetch: refetchJob } = useReadContract({
+    const { data: mission, isLoading: isMissionLoading, refetch: refetchMission } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getJob',
-        args: [jobId],
-    }) as { data: Job | undefined; isLoading: boolean; refetch: () => void }
+        args: [missionId],
+    }) as { data: Mission | undefined; isLoading: boolean; refetch: () => void }
 
-    const escrowReady = !!job?.escrow && job.escrow !== ZERO_ADDRESS
+    const escrowReady = !!mission?.escrow && mission.escrow !== ZERO_ADDRESS
 
     const { data: applicants, refetch: refetchApplicants } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getApplicants',
-        args: [jobId],
-        query: { enabled: !!job },
+        args: [missionId],
+        query: { enabled: !!mission },
     }) as { data: string[] | undefined; refetch: () => void }
 
     const { data: myApplication, refetch: refetchMyApplication } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getApplication',
-        args: connectedAddress ? [jobId, connectedAddress as `0x${string}`] : undefined,
-        query: { enabled: !!connectedAddress && !!job },
-    }) as { data: JobApplication | undefined; refetch: () => void }
+        args: connectedAddress ? [missionId, connectedAddress as `0x${string}`] : undefined,
+        query: { enabled: !!connectedAddress && !!mission },
+    }) as { data: MissionApplication | undefined; refetch: () => void }
 
     const { data: userRequiredStake } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -87,63 +87,63 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     }) as { data: bigint | undefined }
 
     const { data: state, refetch: refetchEscrowState } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'getState',
         query: { enabled: escrowReady },
     }) as { data: bigint | undefined; refetch: () => void }
 
     const { data: deliverableURI, refetch: refetchDeliverable } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'deliverableURI',
         query: { enabled: escrowReady },
     }) as { data: string | undefined; refetch: () => void }
 
     const { data: disputeReason, refetch: refetchDisputeReason } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'disputeReason',
         query: { enabled: escrowReady },
     }) as { data: string | undefined; refetch: () => void }
 
     const { data: disputeRaiser } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'disputeRaiser',
         query: { enabled: escrowReady },
     }) as { data: string | undefined }
 
     const { data: disputedAt } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'disputedAt',
         query: { enabled: escrowReady },
     }) as { data: bigint | undefined }
 
     const { data: submittedAt } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: '_submittedAt',
         query: { enabled: escrowReady },
     }) as { data: bigint | undefined }
 
     const { data: disputeEvidenceURI } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'disputeEvidenceURI',
         query: { enabled: escrowReady },
     }) as { data: string | undefined }
 
     const { data: counterEvidenceURI } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'counterEvidenceURI',
         query: { enabled: escrowReady },
     }) as { data: string | undefined }
 
     const { data: resolutionReasonHash } = useReadContract({
-        address: (job?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
+        address: (mission?.escrow ?? ZERO_ADDRESS) as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'resolutionReasonHash',
         query: { enabled: escrowReady },
@@ -159,14 +159,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     useEffect(() => {
         if (isSuccess && hash) {
             showSnackbar('Mission update successful!', 'success')
-            refetchJob()
+            refetchMission()
             refetchApplicants()
             refetchMyApplication()
             refetchEscrowState()
             refetchDeliverable()
             refetchDisputeReason()
         }
-    }, [isSuccess, hash, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchJob, refetchMyApplication, showSnackbar])
+    }, [isSuccess, hash, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchMission, refetchMyApplication, showSnackbar])
 
     useEffect(() => {
         if (error) {
@@ -174,7 +174,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
     }, [error, showSnackbar])
 
-    const { data: jobCooldown } = useReadContract({
+    const { data: missionCooldown } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'applicationCooldown',
@@ -186,7 +186,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         functionName: 'applicationStakeWei',
     }) as { data: bigint | undefined }
 
-    const { data: jobLastApp } = useReadContract({
+    const { data: missionLastApp } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'lastApplicationAt',
@@ -194,45 +194,49 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         query: { enabled: !!connectedAddress },
     }) as { data: bigint | undefined }
 
-    if (isJobLoading) {
+    if (isMissionLoading) {
         return (
-            <main className="min-h-screen bg-background-light dark:bg-background-dark pt-40 flex items-center justify-center">
-                <div className="text-text-muted-light dark:text-text-muted-dark font-bold uppercase tracking-widest animate-pulse text-sm">
-                    Loading mission...
+            <main className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark pt-24">
+                <Navbar />
+                <div className="flex items-center justify-center p-20 animate-pulse font-bold uppercase tracking-widest text-xs">Synchronizing Intelligence...</div>
+            </main>
+        )
+    }
+
+    if (!mission) {
+        return (
+            <main className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark pt-24">
+                <Navbar />
+                <div className="flex flex-col items-center justify-center p-20 glass-panel max-w-xl mx-auto mt-20 rounded-3xl border border-white/20">
+                    <Target size={48} className="text-red-500 mb-6" />
+                    <h1 className="text-2xl font-bold mb-2">Mission Not Found</h1>
+                    <p className="opacity-60 mb-8">This operation identifier does not exist or has been purged from the registry.</p>
+                    <Link href="/missions" className="text-primary font-bold hover:underline">Return to Marketplace</Link>
                 </div>
             </main>
         )
     }
 
-    if (!job) {
-        return (
-            <main className="min-h-screen bg-background-light dark:bg-background-dark pt-40 flex items-center justify-center">
-                <div className="text-red-500 font-bold">MISSION ID NOT FOUND</div>
-            </main>
-        )
-    }
-
-    const isClient = connectedAddress?.toLowerCase() === job.client.toLowerCase()
-    const isSelectedOperator = connectedAddress?.toLowerCase() === job.freelancer.toLowerCase()
+    const isClient = connectedAddress?.toLowerCase() === mission.client.toLowerCase()
+    const isSelectedOperator = !!mission.freelancer && connectedAddress?.toLowerCase() === mission.freelancer.toLowerCase()
     const isTxBusy = isPending || isConfirming
-    const jobStatus = JOB_STATUS_LABELS[job.status] ?? 'UNKNOWN'
+    const missionStatus = MISSION_STATUS_LABELS[mission.status] ?? 'UNKNOWN'
     const escrowStateIndex = state !== undefined ? Number(state) : undefined
     const escrowStateName: EscrowState = escrowStateIndex !== undefined ? ESCROW_STATES[escrowStateIndex] : 'FUNDED'
-    const createdDate = job.createdAt > 0n ? new Date(Number(job.createdAt * 1000n)).toLocaleDateString('en-US') : '-'
-
-    const statusLabel = job.status === 3 && escrowReady ? `FUNDED / ${escrowStateName}` : jobStatus
+    const createdDate = mission.createdAt > 0n ? new Date(Number(mission.createdAt * 1000n)).toLocaleDateString('en-US') : '-'
+    const statusLabel = mission.status === 3 && escrowReady ? `FUNDED / ${escrowStateName}` : missionStatus
     const flowStepIndex = (() => {
-        if (job.status === 5) return 0 // cancelled
-        if (job.status === 0) return (applicants?.length ?? 0) > 0 ? 1 : 0
-        if (job.status === 1) return 2
-        if (job.status === 2) return 3
-        if (job.status === 3) {
+        if (mission.status === 5) return 0 // cancelled
+        if (mission.status === 0) return (applicants?.length ?? 0) > 0 ? 1 : 0
+        if (mission.status === 1) return 2
+        if (mission.status === 2) return 3
+        if (mission.status === 3) {
             if (escrowStateIndex === undefined) return 4
             if (escrowStateIndex >= 4) return 6 // released
             if (escrowStateIndex >= 1) return 5 // submitted or later before release
             return 4
         }
-        if (job.status === 4) return 6 // closed
+        if (mission.status === 4) return 6 // closed
         return 0
     })()
 
@@ -242,7 +246,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'applyToJob',
-            args: [jobId, proposal],
+            args: [missionId, proposal],
             value: stake,
         })
     }
@@ -252,7 +256,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'selectOperator',
-            args: [jobId, operator as `0x${string}`],
+            args: [missionId, operator as `0x${string}`],
         })
     }
 
@@ -261,7 +265,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'acceptAssignment',
-            args: [jobId],
+            args: [missionId],
         })
     }
 
@@ -270,18 +274,18 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'fundEscrow',
-            args: [jobId],
+            args: [missionId],
             value: budget,
         })
     }
 
 
-    const handleReopenJob = () => {
+    const handleReopenMission = () => {
         writeContract({
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'reopenJob',
-            args: [jobId],
+            args: [missionId],
         })
     }
 
@@ -290,7 +294,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'timeoutReopenAndSlashSelected',
-            args: [jobId],
+            args: [missionId],
         })
     }
 
@@ -299,7 +303,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'timeoutCancelByOperator',
-            args: [jobId],
+            args: [missionId],
         })
     }
 
@@ -308,13 +312,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'withdrawApplicationStake',
-            args: [jobId],
+            args: [missionId],
         })
     }
 
     const handleSubmitWork = (uri: string) => {
         writeContract({
-            address: job.escrow as `0x${string}`,
+            address: mission.escrow as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'submitWork',
             args: [uri],
@@ -323,7 +327,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
     const handleApproveWork = () => {
         writeContract({
-            address: job.escrow as `0x${string}`,
+            address: mission.escrow as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'approveWork',
         })
@@ -334,8 +338,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             // Determine who the caller is to set the intended "winner" for the automated execution if the proposal passes.
             // A dispute raised by the client asks the DAO to vote YES to release funds back to the client.
             // A dispute raised by the operator asks the DAO to vote YES to release funds to the operator.
-            const isClientCall = connectedAddress?.toLowerCase() === job?.client.toLowerCase()
-            const expectedWinner = (isClientCall ? job?.client : job?.freelancer) as `0x${string}`
+            const isClientCall = connectedAddress?.toLowerCase() === mission?.client.toLowerCase()
+            const expectedWinner = (isClientCall ? mission?.client : mission?.freelancer) as `0x${string}`
 
             const description = `DISPUTE-${id}: Resolve dispute for Mission #${id}. Reason: ${reason}`
             const reasonHash = ('0x' + Buffer.from(description).toString('hex')) as `0x${string}` // Simplistic hash for execution
@@ -348,11 +352,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             })
 
             // First send to Governance with the execution payload pointing to the Escrow contract
-            await propose(description, job.escrow as `0x${string}`, calldata)
+            await propose(description, mission.escrow as `0x${string}`, calldata)
 
             // Then raise the dispute on the Escrow contract
             await writeContract({
-                address: job.escrow as `0x${string}`,
+                address: mission.escrow as `0x${string}`,
                 abi: ESCROW_ABI,
                 functionName: 'raiseDispute',
                 args: [reason, evidence],
@@ -367,7 +371,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
     const handleSubmitCounterEvidence = (evidence: string) => {
         writeContract({
-            address: job.escrow as `0x${string}`,
+            address: mission.escrow as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'submitCounterEvidence',
             args: [evidence],
@@ -376,7 +380,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
     const handleAutoApprove = () => {
         writeContract({
-            address: job.escrow as `0x${string}`,
+            address: mission.escrow as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'autoApprove',
         })
@@ -384,7 +388,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
     const handleRefund = () => {
         writeContract({
-            address: job.escrow as `0x${string}`,
+            address: mission.escrow as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'refund',
         })
@@ -405,16 +409,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
                                     <div className="text-xs uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark">Mission #{id}</div>
-                                    <h1 className="text-3xl md:text-4xl font-black mt-1">{job.title}</h1>
+                                    <h1 className="text-3xl md:text-4xl font-black mt-1">{mission.title}</h1>
                                     <div suppressHydrationWarning className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">Posted: {createdDate}</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-xs uppercase tracking-widest text-text-muted-light dark:text-text-muted-dark">Status</div>
                                     <div className="font-bold text-primary">{statusLabel}</div>
-                                    <div className="text-2xl font-black mt-2">{formatEther(job.budget)} AVAX</div>
+                                    <div className="text-2xl font-black mt-2">{formatEther(mission.budget)} AVAX</div>
                                     {escrowReady && (
                                         <a
-                                            href={`${explorerBase}/address/${job.escrow}`}
+                                            href={`${explorerBase}/address/${mission.escrow}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
@@ -445,7 +449,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <div className="text-xs text-text-muted-light dark:text-text-muted-dark">View our 7-step guide to understand stakes, timeouts, and disputes.</div>
                                     </div>
                                 </div>
-                                <Link href="/missions/how-it-works" className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/90 transition-colors shrink-0">
+                                <Link href="/missions/how-it-works" className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/90 transition-colors shrink-0 fluid-touch">
                                     Learn More
                                 </Link>
                             </div>
@@ -502,16 +506,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             <div className="flex-1">
                                 <h3 className="text-lg font-bold">What&apos;s next?</h3>
                                 <div className="text-sm opacity-80 mt-1">
-                                    {job.status === 0 && (
+                                    {mission.status === 0 && (
                                         isClient ? "Waiting for operators to apply. Review proposals below when they arrive." : "This mission is open for applications. Submit your proposal to be considered!"
                                     )}
-                                    {job.status === 1 && (
+                                    {mission.status === 1 && (
                                         isSelectedOperator ? "You have been selected! Click 'Accept Assignment' below to confirm you're ready to start." : isClient ? "Waiting for the selected operator to accept the assignment." : "An operator has been selected and is reviewing the assignment."
                                     )}
-                                    {job.status === 2 && (
+                                    {mission.status === 2 && (
                                         isSelectedOperator ? "Assignment accepted! Please wait while the client funds the escrow to formally start the mission." : isClient ? "Operator has accepted! Now you must fund the escrow budget to secure the work." : "Selection confirmed. Waiting for client funding."
                                     )}
-                                    {job.status === 3 && (
+                                    {mission.status === 3 && (
                                         isSelectedOperator ? (
                                             escrowStateIndex === 0 ? "Mission is live! You can now start working and submit your deliverables below." :
                                                 escrowStateIndex === 1 ? "Deliverables submitted. Waiting for the client to review and release funds." :
@@ -524,16 +528,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                         "Escrow active. Monitor progress below."
                                         ) : "Mission in progress."
                                     )}
-                                    {job.status === 4 && "Mission successfully completed and funds released."}
-                                    {job.status === 5 && "This mission has been cancelled."}
+                                    {mission.status === 4 && "Mission successfully completed and funds released."}
+                                    {mission.status === 5 && "This mission has been cancelled."}
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <PartyProfileCard role="Client" addr={job.client} />
-                            {job.freelancer !== ZERO_ADDRESS ? (
-                                <PartyProfileCard role="Selected Operator" addr={job.freelancer} />
+                            <PartyProfileCard role="Client" addr={mission.client} />
+                            {mission.freelancer !== ZERO_ADDRESS ? (
+                                <PartyProfileCard role="Selected Operator" addr={mission.freelancer} />
                             ) : (
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 text-sm text-text-muted-light dark:text-text-muted-dark">
                                     No operator selected yet.
@@ -541,7 +545,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             )}
                         </div>
 
-                        {job.status === 0 && (
+                        {mission.status === 0 && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-4">
                                     <h2 className="text-xl font-bold">Operator Applications</h2>
@@ -550,7 +554,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             {applicants.map(addr => (
                                                 <ApplicantRow
                                                     key={addr}
-                                                    jobId={jobId}
+                                                    missionId={missionId}
                                                     operator={addr}
                                                     canSelect={!!isClient}
                                                     isBusy={isTxBusy}
@@ -573,7 +577,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                             )}
                                         </p>
                                         {myApplication?.exists ? (
-                                            job.status === 0 ? (
+                                            mission.status === 0 ? (
                                                 <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex flex-col gap-3">
                                                     <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
                                                         <span className="material-symbols-outlined text-base">lock</span>
@@ -585,12 +589,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                     <button
                                                         onClick={handleWithdrawApplicationStake}
                                                         disabled={isTxBusy}
-                                                        className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2"
+                                                        className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2 fluid-touch"
                                                     >
                                                         Withdraw Application & Stake
                                                     </button>
                                                 </div>
-                                            ) : job.status === 1 ? (
+                                            ) : mission.status === 1 ? (
                                                 isSelectedOperator ? (
                                                     <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
                                                         <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm mb-2">
@@ -619,7 +623,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                         </button>
                                                     </div>
                                                 )
-                                            ) : (job.status >= 2 && job.status <= 4) ? (
+                                            ) : (mission.status >= 2 && mission.status <= 4) ? (
                                                 isSelectedOperator ? (
                                                     <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
                                                         <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm mb-2">
@@ -648,7 +652,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                         </button>
                                                     </div>
                                                 )
-                                            ) : job.status === 5 ? (
+                                            ) : mission.status === 5 ? (
                                                 <div className="bg-gray-500/10 border border-gray-500/20 p-4 rounded-xl flex flex-col gap-3">
                                                     <div className="flex items-center gap-2 text-gray-400 font-bold text-sm">
                                                         <span className="material-symbols-outlined text-base">cancel</span>
@@ -679,8 +683,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                     }}
                                                 />
                                                 {(() => {
-                                                    const lastApp = jobLastApp ?? 0n
-                                                    const cooldown = jobCooldown ?? 0n
+                                                    const lastApp = missionLastApp ?? 0n
+                                                    const cooldown = missionCooldown ?? 0n
                                                     const isLocked = lastApp > 0n && BigInt(currentTime) < lastApp + cooldown
                                                     const remaining = Number(lastApp + cooldown - BigInt(currentTime))
 
@@ -705,7 +709,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                                                 handleApply(proposal, userRequiredStake ?? BigInt(0))
                                                             }}
                                                             disabled={isTxBusy}
-                                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse"
+                                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse fluid-touch"
                                                         >
                                                             {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
                                                         </button>
@@ -718,21 +722,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         )}
 
-                        {(job.status === 1 || job.status === 2) && (
+                        {(mission.status === 1 || mission.status === 2) && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {isSelectedOperator && !job.operatorAccepted && (
+                                {isSelectedOperator && !mission.operatorAccepted && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6">
                                         <h2 className="text-xl font-bold mb-3">Assignment Acceptance</h2>
                                         <button
                                             onClick={handleAcceptAssignment}
                                             disabled={isTxBusy}
-                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40"
+                                            className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 fluid-touch"
                                         >
                                             {isTxBusy ? 'Submitting...' : 'Accept Assignment'}
                                         </button>
                                     </div>
                                 )}
-                                {isSelectedOperator && job.operatorAccepted && (
+                                {isSelectedOperator && mission.operatorAccepted && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                         <h2 className="text-xl font-bold">Waiting For Client Funding</h2>
                                         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
@@ -747,23 +751,23 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         </button>
                                     </div>
                                 )}
-                                {isClient && job.status === 2 && (
+                                {isClient && mission.status === 2 && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                         <h2 className="text-xl font-bold">Fund Escrow</h2>
                                         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                                            {job.operatorAccepted ? 'Selected operator has accepted. You can fund escrow now.' : 'Waiting for selected operator to accept assignment.'}
+                                            {mission.operatorAccepted ? 'Selected operator has accepted. You can fund escrow now.' : 'Waiting for selected operator to accept assignment.'}
                                         </p>
                                         <button
-                                            onClick={() => handleFundEscrow(job.budget)}
-                                            disabled={isTxBusy || !job.operatorAccepted}
-                                            className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40 shadow-lg shadow-emerald-500/20"
+                                            onClick={() => handleFundEscrow(mission.budget)}
+                                            disabled={isTxBusy || !mission.operatorAccepted}
+                                            className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40 shadow-lg shadow-emerald-500/20 fluid-touch"
                                         >
-                                            {isTxBusy ? 'Funding...' : `Fund ${formatEther(job.budget)} AVAX Escrow`}
+                                            {isTxBusy ? 'Funding...' : `Fund ${formatEther(mission.budget)} AVAX Escrow`}
                                         </button>
-                                        {!job.operatorAccepted && (
+                                        {!mission.operatorAccepted && (
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
-                                                    onClick={handleReopenJob}
+                                                    onClick={handleReopenMission}
                                                     disabled={isTxBusy}
                                                     className="w-full py-3 rounded-xl border border-white/20 font-bold disabled:opacity-40"
                                                 >
@@ -784,7 +788,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         )}
 
 
-                        {job.status === 3 && escrowReady && (
+                        {mission.status === 3 && escrowReady && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                     <h2 className="text-xl font-bold">Work Delivery</h2>
@@ -992,13 +996,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 }
 
 function ApplicantRow({
-    jobId,
+    missionId,
     operator,
     canSelect,
     isBusy,
     onSelect,
 }: {
-    jobId: bigint
+    missionId: bigint
     operator: string
     canSelect: boolean
     isBusy: boolean
@@ -1008,8 +1012,8 @@ function ApplicantRow({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getApplication',
-        args: [jobId, operator as `0x${string}`],
-    }) as { data: JobApplication | undefined }
+        args: [missionId, operator as `0x${string}`],
+    }) as { data: MissionApplication | undefined }
 
     const { data: profile } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,
@@ -1018,7 +1022,7 @@ function ApplicantRow({
         args: [operator as `0x${string}`],
     }) as { data: Profile | undefined }
 
-    const { data: userJobs } = useReadContract({
+    const { data: userMissions } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getJobsByUser',
@@ -1038,7 +1042,7 @@ function ApplicantRow({
                 </div>
                 <div className="text-right text-xs text-text-muted-light dark:text-text-muted-dark">
                     <div>Rep: {Number(profile?.reputationScore ?? BigInt(0))}</div>
-                    <div>Jobs: {userJobs?.length ?? 0}</div>
+                    <div>Missions: {userMissions?.length ?? 0}</div>
                 </div>
             </div>
 
@@ -1065,7 +1069,7 @@ function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
         args: [addr as `0x${string}`],
     }) as { data: Profile | undefined }
 
-    const { data: userJobs } = useReadContract({
+    const { data: userMissions } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getJobsByUser',
@@ -1080,7 +1084,7 @@ function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
             </Link>
             <div className="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{shortAddr(addr)}</div>
             <div className="text-sm mt-3">Reputation: <span className="font-bold">{Number(profile?.reputationScore ?? BigInt(0))}</span></div>
-            <div className="text-sm">Past Jobs: <span className="font-bold">{userJobs?.length ?? 0}</span></div>
+            <div className="text-sm">Past Missions: <span className="font-bold">{userMissions?.length ?? 0}</span></div>
             <Link href={`/profile/${addr}`} className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline mt-2">
                 View Profile <ExternalLink size={14} />
             </Link>

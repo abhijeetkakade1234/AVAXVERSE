@@ -1,5 +1,5 @@
-// Shared types for the Jobs route
-export type Job = {
+// Shared types for the Missions route
+export type Mission = {
     escrow: string
     client: string
     freelancer: string
@@ -11,7 +11,7 @@ export type Job = {
     operatorAccepted: boolean
 }
 
-export type JobApplication = {
+export type MissionApplication = {
     proposalURI: string
     appliedAt: bigint
     exists: boolean

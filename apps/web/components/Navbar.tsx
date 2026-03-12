@@ -15,7 +15,7 @@ export default function Navbar() {
   const [isDesktop, setIsDesktop] = useState(false)
 
   const navLinks = [
-    { href: '/explorer', label: 'Explore' },
+    { href: '/explore', label: 'Explore' },
     { href: '/talent', label: 'Talent' },
     { href: '/missions', label: 'Missions' },
     { href: '/bounties', label: 'Bounties' },
