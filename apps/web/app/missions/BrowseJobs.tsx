@@ -71,7 +71,7 @@ const JobCard = React.memo(function JobCard({ jobId, job }: { jobId: bigint; job
         : '-'
 
     return (
-        <Link href={`/jobs/${jobId}`}>
+        <Link href={`/missions/${jobId}`}>
             <div className="mission-card-hover glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 flex flex-col h-full cursor-pointer group animate-enter">
                 <div className="flex justify-between items-start mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">

@@ -37,7 +37,7 @@ function JobsContent() {
     }, [searchParams])
 
     const switchTab = (nextTab: 'browse' | 'create' | 'manage') => {
-        router.replace(`/jobs?tab=${nextTab}`, { scroll: false })
+        router.replace(`/missions?tab=${nextTab}`, { scroll: false })
     }
 
     return (
@@ -46,14 +46,14 @@ function JobsContent() {
             <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
+                        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 font-outfit">
                             {tab === 'create' ? 'Initialize New Mission' : 'Mission Marketplace'}
                         </h1>
-                        <p className="text-text-muted-light dark:text-text-muted-dark font-medium">
+                        <p className="text-text-muted-light dark:text-text-muted-dark font-medium max-w-2xl">
                             {tab === 'create'
                                 ? 'Deploy a high-stakes protocol task backed by secure Avalanche smart contract escrows.'
                                 : 'Browse high-stakes operations across the Avalanche network.'}
-                            <Link href="/jobs/how-it-works" className="ml-2 text-primary hover:underline inline-flex items-center gap-1">
+                            <Link href="/missions/how-it-works" className="ml-2 text-primary hover:underline inline-flex items-center gap-1">
                                 Learn how it works <Search size={12} />
                             </Link>
                         </p>
@@ -146,7 +146,7 @@ function JobsContent() {
                             <div className="mt-4 flex items-center gap-2 text-xs text-text-muted-light dark:text-text-muted-dark bg-primary/5 p-3 rounded-xl border border-primary/10 w-fit mx-auto">
                                 <Search size={14} className="text-primary" />
                                 <span>Unsure about the next steps?</span>
-                                <Link href="/jobs/how-it-works" className="text-primary font-bold hover:underline">
+                                <Link href="/missions/how-it-works" className="text-primary font-bold hover:underline">
                                     View the 7-Step Workflow Guide
                                 </Link>
                             </div>

@@ -103,7 +103,7 @@ export default function MissionsTab({ allJobs }: MissionsTabProps) {
                                                 <div className="text-sm font-bold text-gray-900 dark:text-white">{formatEther(job.budget)} AVAX</div>
                                                 <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Rewards</div>
                                             </div>
-                                            <Link href={`/jobs/${job.id}`}>
+                                            <Link href={`/missions/${job.id}`}>
                                                 <button className="px-6 py-2.5 bg-[#8B82F6] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#8B82F6]/25 hover:scale-105 active:scale-95 transition-transform">
                                                     Mission Control
                                                 </button>

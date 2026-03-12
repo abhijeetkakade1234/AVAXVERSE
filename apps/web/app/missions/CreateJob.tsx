@@ -100,7 +100,7 @@ export default function CreateJob() {
                 <span className="material-symbols-outlined text-neon-green text-6xl block mb-6">check_circle</span>
                 <h2 className="text-2xl font-bold mb-2">Mission Posted</h2>
                 <p className="text-text-muted-light dark:text-text-muted-dark mb-8">Operators can now apply. Select one, then fund escrow after acceptance.</p>
-                <Link href="/jobs?tab=browse" className="text-primary font-bold hover:underline">Return to Marketplace</Link>
+                <Link href="/missions?tab=browse" className="text-primary font-bold hover:underline">Return to Marketplace</Link>
             </div>
         )
     }
@@ -229,7 +229,7 @@ export default function CreateJob() {
                                 <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2 bg-primary/5 p-3 rounded-xl border border-primary/10">
                                     <Info size={14} className="inline mr-1 text-primary" />
                                     Note: A 7-day auto-review policy applies. If you don&apos;t approve or dispute within 7 days of delivery, funds release automatically.
-                                    <Link href="/jobs/how-it-works" className="ml-1 text-primary hover:underline font-bold">Learn more about periods & disputes.</Link>
+                                    <Link href="/missions/how-it-works" className="ml-1 text-primary hover:underline font-bold">Learn more about periods & disputes.</Link>
                                 </p>
                                 <div className="relative">
                                     <input

@@ -33,7 +33,7 @@ const FAQ_ITEMS = [
 const ROUTE_EXPLANATIONS = [
     {
         icon: <Layout className="text-primary" size={24} />,
-        title: "Marketplace (/jobs)",
+        title: "Marketplace (/missions)",
         desc: "The nerve center of AVAXVERSE. This is where missions are initialized, discovered, and managed. It handles everything from the initial handshake to the final escrow release."
     },
     {
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
             <Navbar />
             <div className="pt-32 pb-20">
                 <Section>
-                    <Link href="/jobs" className="inline-flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors mb-12 group text-sm font-bold">
+                    <Link href="/missions" className="inline-flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors mb-12 group text-sm font-bold">
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Marketplace
                     </Link>
 
@@ -225,10 +225,10 @@ export default function HowItWorksPage() {
                                 Join the most secure job marketplace in the Avalanche ecosystem. Start building on the infrastructure of trust.
                             </p>
                             <div className="flex flex-wrap justify-center gap-4">
-                                <Link href="/jobs?tab=create" className="px-12 py-5 rounded-full bg-white text-primary font-black text-lg hover:scale-105 transition-all shadow-xl">
+                                <Link href="/missions?tab=create" className="px-12 py-5 rounded-full bg-white text-primary font-black text-lg hover:scale-105 transition-all shadow-xl">
                                     Post a Mission
                                 </Link>
-                                <Link href="/jobs?tab=browse" className="px-12 py-5 rounded-full bg-primary-dark text-white border border-white/20 font-black text-lg hover:scale-105 transition-all shadow-xl">
+                                <Link href="/missions?tab=browse" className="px-12 py-5 rounded-full bg-primary-dark text-white border border-white/20 font-black text-lg hover:scale-105 transition-all shadow-xl">
                                     Browse Missions
                                 </Link>
                             </div>

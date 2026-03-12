@@ -396,7 +396,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
             <div className="pt-32 pb-20">
                 <Section>
-                    <Link href="/jobs?tab=browse" className="inline-flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors mb-8 group text-sm font-bold">
+                    <Link href="/missions?tab=browse" className="inline-flex items-center gap-2 text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors mb-8 group text-sm font-bold">
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Marketplace
                     </Link>
 
@@ -445,7 +445,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                                         <div className="text-xs text-text-muted-light dark:text-text-muted-dark">View our 7-step guide to understand stakes, timeouts, and disputes.</div>
                                     </div>
                                 </div>
-                                <Link href="/jobs/how-it-works" className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/90 transition-colors shrink-0">
+                                <Link href="/missions/how-it-works" className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/90 transition-colors shrink-0">
                                     Learn More
                                 </Link>
                             </div>

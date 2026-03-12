@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* Use .dark class on <html> for dark mode (not OS preference) */
@@ -30,6 +30,7 @@
   --radius-3xl: 2.5rem;
 
   --font-display: "Inter", "sans-serif";
+  --font-outfit: "Outfit", "sans-serif";
 }
 
 @layer base {
@@ -141,39 +142,67 @@
 
   /* Premium Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Slimmer scrollbar for mobile */
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
-  }
-
-  .dark ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(123, 97, 255, 0.3);
+    background: rgba(123, 97, 255, 0.2);
     border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-    transition: all 0.3s;
+    transition: background 0.3s;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(123, 97, 255, 0.6);
-    background-clip: content-box;
+    background: rgba(123, 97, 255, 0.4);
   }
 
   /* Support for Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(123, 97, 255, 0.3) rgba(0, 0, 0, 0.05);
+    scrollbar-color: rgba(123, 97, 255, 0.2) transparent;
   }
 
-  .dark * {
-    scrollbar-color: rgba(123, 97, 255, 0.3) rgba(255, 255, 255, 0.02);
+  /* Global Fluid Interactions */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .fluid-touch {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .fluid-touch:active {
+    transform: scale(0.96);
+  }
+
+  /* Prevent layout shift on font weight change */
+  .nav-link-bold {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-link-bold::after {
+    content: attr(data-text);
+    content: attr(data-text) / "";
+    height: 0;
+    visibility: hidden;
+    overflow: hidden;
+    user-select: none;
+    pointer-events: none;
+    font-weight: bold;
   }
 }
