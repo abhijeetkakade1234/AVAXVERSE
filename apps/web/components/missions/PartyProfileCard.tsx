@@ -19,7 +19,9 @@ type Profile = {
     exists: boolean
 }
 
-export function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
+// ⚡ Bolt Performance Optimization:
+// Memoizing PartyProfileCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+export const PartyProfileCard = React.memo(function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
     const { data: profile } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,
         abi: IDENTITY_REGISTRY_ABI,
@@ -70,4 +72,4 @@ export function PartyProfileCard({ role, addr }: { role: string; addr: string })
             </Link>
         </div>
     )
-}
+})
