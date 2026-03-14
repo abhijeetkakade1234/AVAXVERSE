@@ -38,6 +38,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     const [evidenceUrl, setEvidenceUrl] = useState('')
     const { propose } = useGovernance()
     const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000))
+    const [lastAttemptTime, setLastAttemptTime] = useState(0)
 
     useEffect(() => {
         const interval = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 1000)
@@ -227,8 +228,10 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     })()
 
     // ── Handlers ────────────────────────────────────────────────────────────
-    const handleApply = (proposal: string, stake: bigint) =>
+    const handleApply = (proposal: string, stake: bigint) => {
+        setLastAttemptTime(Math.floor(Date.now() / 1000))
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'applyToJob', args: [missionId, proposal], value: stake })
+    }
 
     const handleSelectOperator = (operator: string) =>
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'selectOperator', args: [missionId, operator as `0x${string}`] })
@@ -390,12 +393,19 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                     const lastApp = missionLastApp ?? 0n
                                                     const cooldown = missionCooldown ?? 0n
                                                     const isLocked = lastApp > 0n && BigInt(currentTime) < lastApp + cooldown
-                                                    if (isLocked) {
-                                                        const remaining = Number(lastApp + cooldown - BigInt(currentTime))
+                                                    const lastAttempt = lastAttemptTime ?? 0
+                                                    const localCooldown = 5
+                                                    const isLocalLocked = lastAttempt > 0 && currentTime < lastAttempt + localCooldown
+
+                                                    if (isLocked || isLocalLocked) {
+                                                        const remaining = isLocked 
+                                                            ? Number(lastApp + cooldown - BigInt(currentTime))
+                                                            : Number(lastAttempt + localCooldown - currentTime)
+                                                        
                                                         const m = Math.floor(remaining / 60), s = remaining % 60
                                                         return (
                                                             <div className="w-full py-4 rounded-xl bg-primary/5 border border-primary/20 text-text-muted-light dark:text-text-muted-dark font-mono text-center text-sm flex items-center justify-center gap-2">
-                                                                <span className="animate-pulse">⏳</span> Application Cooldown: {m}:{s.toString().padStart(2, '0')}
+                                                                <span className="animate-pulse">⏳</span> {isLocked ? 'Application Cooldown' : 'Local Cooldown'}: {m}:{s.toString().padStart(2, '0')}
                                                             </div>
                                                         )
                                                     }

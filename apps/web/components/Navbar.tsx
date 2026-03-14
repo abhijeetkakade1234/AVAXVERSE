@@ -52,9 +52,8 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 data-text={link.label}
-                className={`nav-link-bold hover:font-bold transition-all duration-300 cursor-pointer tracking-wide ${
-                  isActive ? 'font-bold text-white' : 'text-white/70 hover:text-white'
-                }`}
+                className={`nav-link-bold hover:font-bold transition-all duration-300 cursor-pointer tracking-wide ${isActive ? 'font-bold text-white' : 'text-white/70 hover:text-white'
+                  }`}
               >
                 {link.label}
               </Link>
@@ -102,9 +101,8 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
-                className={`block rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/15 hover:text-white'
-                }`}
+                className={`block rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${isActive ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/15 hover:text-white'
+                  }`}
               >
                 {link.label}
               </Link>
