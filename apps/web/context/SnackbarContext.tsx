@@ -14,7 +14,12 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     const [snackbar, setSnackbar] = useState<{ message: string; type: SnackbarType; open: boolean } | null>(null)
 
     const showSnackbar = useCallback((message: string, type: SnackbarType = 'info') => {
-        setSnackbar({ message, type, open: true })
+        setSnackbar(prev => {
+            // Prevent duplicate snackbars with the same message if already open
+            if (prev?.open && prev.message === message) return prev
+            return { message, type, open: true }
+        })
+
         // Auto-hide after 5 seconds
         setTimeout(() => {
             setSnackbar(prev => prev?.message === message ? { ...prev, open: false } : prev)
