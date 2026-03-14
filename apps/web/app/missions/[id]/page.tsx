@@ -433,9 +433,10 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                             onClick={() => {
                                                                 const p = proposalURI.trim()
                                                                 if (!p) { setLocalError('Proposal is required to apply.'); return }
-                                                                handleApply(p, userRequiredStake ?? 0n)
+                                                                if (userRequiredStake === undefined) { setLocalError('Still calculating required stake. Please wait.'); return }
+                                                                handleApply(p, userRequiredStake)
                                                             }}
-                                                            disabled={isTxBusy}
+                                                            disabled={isTxBusy || userRequiredStake === undefined}
                                                             className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse fluid-touch"
                                                         >
                                                             {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
