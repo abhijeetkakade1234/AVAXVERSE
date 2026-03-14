@@ -21,7 +21,10 @@ type Profile = {
 }
 
 // ─── Operator entry: two-line card inside the modal ────────────────────────
-function ApplicantRow({
+// ⚡ Bolt Performance Optimization:
+// Memoizing ApplicantRow prevents expensive re-renders (involving multiple Wagmi useReadContract hooks)
+// on every keystroke when filtering or searching applications.
+const ApplicantRow = React.memo(function ApplicantRow({
     missionId,
     operator,
     profile,
@@ -142,7 +145,7 @@ function ApplicantRow({
             )}
         </div>
     )
-}
+})
 
 // ─── Main component ─────────────────────────────────────────────────────────
 interface OperatorApplicationsPanelProps {
