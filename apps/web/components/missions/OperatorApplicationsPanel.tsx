@@ -295,7 +295,7 @@ export function OperatorApplicationsPanel({
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-11 pr-9 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all placeholder:opacity-40"
                                 />
                                 {search && (
-                                    <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 text-xs font-bold">✕</button>
+                                    <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 text-xs font-bold" aria-label="Clear search">✕</button>
                                 )}
                             </div>
                             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 sm:w-auto">
