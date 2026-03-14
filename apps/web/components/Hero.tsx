@@ -26,8 +26,8 @@ export default function Hero() {
             </h1>
 
             <div className="flex flex-col items-center gap-8">
-              <Link href="/jobs">
-                <button className="bg-white text-primary px-12 py-6 rounded-full font-bold text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.3)] flex items-center gap-4 group">
+              <Link href="/missions">
+                <button className="bg-white text-primary px-12 py-6 rounded-full font-bold text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.3)] flex items-center gap-4 group fluid-touch">
                   <span className="material-icons group-hover:rotate-12 transition-transform">rocket_launch</span>
                   Enter the Verse
                 </button>

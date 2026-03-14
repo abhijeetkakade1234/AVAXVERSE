@@ -18,7 +18,7 @@ export default function Logo({
             <span className={`material-icons ${color} ${iconSize} group-hover:rotate-12 transition-transform`}>
                 layers
             </span>
-            <span className={`font-bold ${textSize} ${color} tracking-tight`}>
+            <span className={`font-bold font-outfit ${textSize} ${color} tracking-tight`}>
                 AVAXVERSE
             </span>
         </Link>

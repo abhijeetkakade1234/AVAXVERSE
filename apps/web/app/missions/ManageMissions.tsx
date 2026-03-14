@@ -6,39 +6,39 @@ import { ClipboardList, ArrowRight, Coins } from 'lucide-react'
 import Link from 'next/link'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, type EscrowState } from '@/lib/abis'
-import { type Job } from './types'
+import { type Mission } from './types'
 import Pagination from '@/components/ui/Pagination'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const JOB_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
+const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 const TIMELINE_STATES: EscrowState[] = ['FUNDED', 'SUBMITTED', 'APPROVED', 'RELEASED']
 
-// ─── Manage Job Card ──────────────────────────────────────────────────────────
+// ─── Manage Mission Card ───────────────────────────────────────────────────────
 // ⚡ Bolt Performance Optimization:
-// Memoizing ManageJobCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// Memoizing ManageMissionCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
 // when switching between active/history tabs or during pagination.
-const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }: { jobId: bigint; job: Job; address: string }) {
+const ManageMissionCard = React.memo(function ManageMissionCard({ missionId, mission, address }: { missionId: bigint; mission: Mission; address: string }) {
     const { data: state } = useReadContract({
-        address: (job.escrow ?? '0x0') as `0x${string}`,
+        address: (mission.escrow ?? '0x0') as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'getState',
-        query: { enabled: !!job.escrow && job.escrow !== ZERO_ADDRESS },
+        query: { enabled: !!mission.escrow && mission.escrow !== ZERO_ADDRESS },
     }) as { data: bigint | undefined }
 
-    const isClient = address.toLowerCase() === job.client.toLowerCase()
+    const isClient = address.toLowerCase() === mission.client.toLowerCase()
 
-    const hasEscrow = job.escrow !== ZERO_ADDRESS
+    const hasEscrow = mission.escrow !== ZERO_ADDRESS
     const stateIndex = state !== undefined ? Number(state) : undefined
     const stateName: EscrowState = stateIndex !== undefined ? ESCROW_STATES[stateIndex] : 'FUNDED'
-    const marketplaceStatus = JOB_STATUS_LABELS[job.status] ?? 'OPEN'
+    const marketplaceStatus = MISSION_STATUS_LABELS[mission.status] ?? 'OPEN'
     const displayStatus = hasEscrow ? stateName : marketplaceStatus
 
     const displayIdx = hasEscrow ? Math.max(0, TIMELINE_STATES.indexOf(stateName)) : 0
     const progressPct = Math.round(((displayIdx + 1) / TIMELINE_STATES.length) * 100)
-    const budgetAvax = (Number(job.budget) / 1e18).toFixed(2)
-    const counterpart = isClient ? job.freelancer : job.client
-    const createdDate = job.createdAt > BigInt(0)
-        ? new Date(Number(job.createdAt) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const budgetAvax = (Number(mission.budget) / 1e18).toFixed(2)
+    const counterpart = isClient ? mission.freelancer : mission.client
+    const createdDate = mission.createdAt > BigInt(0)
+        ? new Date(Number(mission.createdAt) * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : '—'
 
     const stateColor =
@@ -50,7 +50,7 @@ const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }:
     return (
         <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 hover:border-primary/50 transition-all group animate-enter">
             <div className="flex flex-col lg:flex-row lg:items-center gap-6 text-text-dark">
-                {/* Job Info */}
+                {/* Mission Info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                         <span className={`px-2 py-0.5 border rounded-md text-[10px] font-bold uppercase tracking-wider ${isClient
@@ -59,11 +59,11 @@ const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }:
                             }`}>
                             {isClient ? 'Client' : 'Operator'}
                         </span>
-                        <span className="text-text-muted-light dark:text-text-muted-dark text-xs font-mono font-bold">#OP-{jobId.toString().padStart(4, '0')}</span>
+                        <span className="text-text-muted-light dark:text-text-muted-dark text-xs font-mono font-bold">#OP-{missionId.toString().padStart(4, '0')}</span>
                         <span className={`text-[10px] font-extrabold uppercase ${stateColor}`}>{displayStatus}</span>
                         <span className="text-text-muted-light dark:text-text-muted-dark text-xs">{createdDate}</span>
                     </div>
-                    <h3 className="text-lg font-bold truncate group-hover:text-primary transition-colors dark:text-white">{job.title}</h3>
+                    <h3 className="text-lg font-bold truncate group-hover:text-primary transition-colors dark:text-white">{mission.title}</h3>
                     <p className="text-[10px] font-mono text-text-muted-light dark:text-text-muted-dark mt-1">
                         {isClient ? 'Operator' : 'Client'}: {counterpart.slice(0, 10)}…{counterpart.slice(-6)}
                     </p>
@@ -91,8 +91,8 @@ const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }:
                         <span className="block text-[10px] font-bold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Escrow</span>
                         <span className="text-lg font-black tracking-tight dark:text-white">{budgetAvax} <span className="text-xs font-bold opacity-60">AVAX</span></span>
                     </div>
-                    <Link href={`/jobs/${jobId}`}>
-                        <button className="w-10 h-10 rounded-full bg-white/20 dark:bg-white/5 border border-white/40 dark:border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group-hover:scale-110 active:scale-95" title="View mission">
+                    <Link href={`/missions/${missionId}`}>
+                        <button className="w-10 h-10 rounded-full bg-white/20 dark:bg-white/5 border border-white/40 dark:border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group-hover:scale-110 active:scale-95 fluid-touch" title="View mission">
                             <ArrowRight size={18} className="dark:text-white" />
                         </button>
                     </Link>
@@ -102,8 +102,8 @@ const ManageJobCard = React.memo(function ManageJobCard({ jobId, job, address }:
     )
 })
 
-// ─── Manage Jobs ──────────────────────────────────────────────────────────────
-export default function ManageJobs({ address }: { address: string }) {
+// ─── Manage Missions ──────────────────────────────────────────────────────────
+export default function ManageMissions({ address }: { address: string }) {
     const [subTab, setSubTab] = useState<'active' | 'history'>('active')
     const [currentPage, setCurrentPage] = useState(1)
     const [prevSubTab, setPrevSubTab] = useState(subTab)
@@ -115,14 +115,14 @@ export default function ManageJobs({ address }: { address: string }) {
 
     const pageSize = 100
 
-    const { data: jobIds } = useReadContract({
+    const { data: missionIds } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
         functionName: 'getJobsByUser',
         args: [address as `0x${string}`],
     }) as { data: bigint[] | undefined }
 
-    const ids = useMemo(() => jobIds ?? [], [jobIds])
+    const ids = useMemo(() => missionIds ?? [], [missionIds])
 
     const contracts = useMemo(() => ids.map(id => ({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -131,44 +131,44 @@ export default function ManageJobs({ address }: { address: string }) {
         args: [id],
     })), [ids])
 
-    const { data: jobsResult, isLoading } = useReadContracts({
+    const { data: missionsResult, isLoading } = useReadContracts({
         contracts,
     })
 
-    const allJobs = useMemo(() => {
-        if (!jobsResult) return []
-        return jobsResult.map((res, i) => ({
+    const allMissions = useMemo(() => {
+        if (!missionsResult) return []
+        return missionsResult.map((res, i) => ({
             id: ids[i],
-            job: res.result as unknown as Job,
-        })).filter(x => !!x.job)
-    }, [jobsResult, ids])
+            mission: res.result as unknown as Mission,
+        })).filter(x => !!x.mission)
+    }, [missionsResult, ids])
 
     // Pre-filtering for pagination accuracy
-    const filteredJobs = useMemo(() => {
-        return allJobs.filter(({ job }) => {
-            const hasEscrow = job.escrow !== ZERO_ADDRESS
+    const filteredMissions = useMemo(() => {
+        return allMissions.filter(({ mission }) => {
+            const hasEscrow = mission.escrow !== ZERO_ADDRESS
             if (!hasEscrow) {
-                if (subTab === 'active') return job.status < 4
-                if (subTab === 'history') return job.status >= 4
+                if (subTab === 'active') return mission.status < 4
+                if (subTab === 'history') return mission.status >= 4
             }
-            // For escrowed jobs, we'd need the state, but status is a good fallback for initial filter
-            // Jobs with status 4/5 are almost certainly history
-            if (subTab === 'active') return job.status < 4
-            if (subTab === 'history') return job.status >= 4
+            // For escrowed missions, we'd need the state, but status is a good fallback for initial filter
+            // Missions with status 4/5 are almost certainly history
+            if (subTab === 'active') return mission.status < 4
+            if (subTab === 'history') return mission.status >= 4
             return true
         })
-    }, [allJobs, subTab])
+    }, [allMissions, subTab])
 
-    const totalPages = Math.ceil(filteredJobs.length / pageSize)
-    const paginatedJobs = filteredJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    const totalPages = Math.ceil(filteredMissions.length / pageSize)
+    const paginatedMissions = filteredMissions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
 
     const { activeCount, historyCount } = useMemo(() => {
         return {
-            activeCount: allJobs.filter(x => x.job.status < 4).length,
-            historyCount: allJobs.filter(x => x.job.status >= 4).length
+            activeCount: allMissions.filter(x => x.mission.status < 4).length,
+            historyCount: allMissions.filter(x => x.mission.status >= 4).length
         }
-    }, [allJobs])
+    }, [allMissions])
 
     if (isLoading && ids.length > 0) return <div className="p-20 text-center opacity-50 animate-pulse font-bold uppercase tracking-widest text-xs">Synchronizing Intelligence...</div>
 
@@ -185,13 +185,13 @@ export default function ManageJobs({ address }: { address: string }) {
             <div className="flex p-1.5 bg-white/30 dark:bg-black/20 backdrop-blur-md rounded-2xl border border-white/20 w-fit">
                 <button
                     onClick={() => setSubTab('active')}
-                    className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all ${subTab === 'active' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'}`}
+                    className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all fluid-touch ${subTab === 'active' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'}`}
                 >
                     Active Missions ({activeCount})
                 </button>
                 <button
                     onClick={() => setSubTab('history')}
-                    className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all ${subTab === 'history' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'}`}
+                    className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all fluid-touch ${subTab === 'history' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'hover:bg-white/20 text-text-muted-light dark:text-text-muted-dark'}`}
                 >
                     All History ({historyCount})
                 </button>
@@ -199,10 +199,10 @@ export default function ManageJobs({ address }: { address: string }) {
 
             {/* Mission list */}
             <div className="space-y-4 min-h-[400px]">
-                {paginatedJobs.length > 0 ? (
+                {paginatedMissions.length > 0 ? (
                     <>
-                        {paginatedJobs.map(({ id, job }) => (
-                            <ManageJobCard key={id.toString()} jobId={id} job={job} address={address} />
+                        {paginatedMissions.map(({ id, mission }) => (
+                            <ManageMissionCard key={id.toString()} missionId={id} mission={mission} address={address} />
                         ))}
                         <Pagination
                             currentPage={currentPage}

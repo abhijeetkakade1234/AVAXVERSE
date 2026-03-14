@@ -37,7 +37,7 @@ export default function Home() {
     },
     {
       title: "The Super App Hub",
-      desc: "A Unified Trust Layer: From Job Marketplaces to Arbitration and DeFi, every action compounds into your sovereign on-chain legacy.",
+      desc: "A Unified Trust Layer: From Mission Marketplaces to Arbitration and DeFi, every action compounds into your sovereign on-chain legacy.",
       bg: "bg-[#7B61FF]",
       icon: "apps",
       textColor: "text-white"

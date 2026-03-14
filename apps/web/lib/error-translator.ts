@@ -20,6 +20,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     
     // Generic fallbacks
     "user rejected the request": "Transaction was cancelled in your wallet.",
+    "user denied": "Transaction was cancelled in your wallet.",
     "insufficient funds": "You don't have enough AVAX to cover the transaction cost or stake."
 }
 

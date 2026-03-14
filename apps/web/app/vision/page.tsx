@@ -53,7 +53,7 @@ export default function VisionPage() {
                                 <PhiloPoint
                                     icon={<TrendingUp size={20} />}
                                     title="Portable Reputation"
-                                    desc="Your global trust score is visible everywhere—from job cards to governance power."
+                                    desc="Your global trust score is visible everywhere—from mission cards to governance power."
                                 />
                                 <PhiloPoint
                                     icon={<Target size={20} />}
@@ -63,7 +63,7 @@ export default function VisionPage() {
                                 <PhiloPoint
                                     icon={<Layout size={20} />}
                                     title="Proof-of-Work Portfolio"
-                                    desc="Every completed job automatically becomes a verifiable entry in your professional dashboard."
+                                    desc="Every completed mission automatically becomes a verifiable entry in your professional dashboard."
                                 />
                                 <PhiloPoint
                                     icon={<Users size={20} />}
@@ -149,7 +149,7 @@ export default function VisionPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                             <DeepModuleCard
                                 icon={<Briefcase size={28} />}
-                                title="M1: Jobs"
+                                title="M1: Missions"
                                 status="Operational"
                                 flow="Post → Stake → Approve → Release"
                                 desc="The professional marketplace for high-stakes coordination. Optimized for complex contract work with built-in escrow guarantees."
@@ -194,7 +194,7 @@ export default function VisionPage() {
                                 title="M7: AI Assistant"
                                 status="Conceptual"
                                 flow="Analyze → Match → Draft → Verify"
-                                desc="Next-gen orchestration. AI helps match the best operators to jobs and even assists in objective work verification."
+                                desc="Next-gen orchestration. AI helps match the best operators to missions and even assists in objective work verification."
                             />
                         </div>
                     </div>

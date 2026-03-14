@@ -6,7 +6,17 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "deploy:fuji": "hardhat run scripts/deploy.ts --network fuji",
-    "deploy:local": "hardhat run scripts/deploy.ts --network localhost"
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "upgrade:fuji": "hardhat run scripts/upgrade.ts --network fuji",
+    "upgrade:local": "hardhat run scripts/upgrade.ts --network localhost",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network mainnet",
+    "upgrade:mainnet": "hardhat run scripts/upgrade.ts --network mainnet",
+    "sync-env:local": "ts-node scripts/update-env.ts localhost",
+    "sync-env:fuji": "ts-node scripts/update-env.ts fuji",
+    "sync-env:mainnet": "ts-node scripts/update-env.ts mainnet",
+    "rollback:local": "hardhat run scripts/rollback.ts --network localhost",
+    "rollback:fuji": "hardhat run scripts/rollback.ts --network fuji",
+    "rollback:mainnet": "hardhat run scripts/rollback.ts --network mainnet"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
