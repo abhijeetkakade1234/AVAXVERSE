@@ -444,7 +444,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                         {skills.map((skill, index) => (
                                             <span key={index} className="px-3 py-1 bg-[#8B82F6]/10 text-[#8B82F6] rounded-full text-xs font-medium border border-[#8B82F6]/20 flex items-center gap-1 group">
                                                 {skill}
-                                                <button type="button" onClick={() => removeSkill(skill)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button type="button" onClick={() => removeSkill(skill)} className="opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove skill ${skill}`}>
                                                     <X size={12} className="hover:text-red-400" />
                                                 </button>
                                             </span>
