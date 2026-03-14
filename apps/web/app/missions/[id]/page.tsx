@@ -309,6 +309,25 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                             hash={hash}
                         />
 
+                        {/* Description / Metadata URI */}
+                        {mission.metadataURI && (
+                            <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 md:p-8 space-y-4">
+                                <h2 className="text-xl font-bold flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">description</span>
+                                    Objective Description
+                                </h2>
+                                <div className="text-sm text-text-muted-light dark:text-text-muted-dark whitespace-pre-wrap break-words leading-relaxed">
+                                    {getDeliverableHref(mission.metadataURI) ? (
+                                        <a href={getDeliverableHref(mission.metadataURI)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold break-all">
+                                            {mission.metadataURI}
+                                        </a>
+                                    ) : (
+                                        <span>{mission.metadataURI}</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* ② How-it-works hint */}
                         <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
