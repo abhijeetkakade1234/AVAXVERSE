@@ -303,9 +303,10 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                         <form onSubmit={handleSave} className="space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Display Name</label>
+                                    <label htmlFor="display-name" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Display Name</label>
                                     <div className="relative">
                                         <input
+                                            id="display-name"
                                             type="text"
                                             value={name}
                                             onChange={e => setName(e.target.value)}
@@ -339,7 +340,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Profile Picture</label>
+                                    <label htmlFor="profile-picture" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Profile Picture</label>
                                     <div
                                         className={`relative group h-48 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 overflow-hidden ${isDragging
                                             ? 'border-[#8B82F6] bg-[#8B82F6]/10'
@@ -370,6 +371,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                             </>
                                         )}
                                         <input
+                                            id="profile-picture"
                                             type="file"
                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                             onChange={handleFileChange}
@@ -379,8 +381,9 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Bio / Metadata</label>
+                                    <label htmlFor="bio-metadata" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Bio / Metadata</label>
                                     <textarea
+                                        id="bio-metadata"
                                         value={bio}
                                         onChange={e => setBio(e.target.value)}
                                         rows={3}
@@ -391,10 +394,11 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+                                        <label htmlFor="twitter" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
                                             <Twitter size={14} /> X (Twitter)
                                         </label>
                                         <input
+                                            id="twitter"
                                             type="text"
                                             value={twitter}
                                             onChange={e => setTwitter(e.target.value)}
@@ -403,10 +407,11 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+                                        <label htmlFor="github" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
                                             <Github size={14} /> GitHub
                                         </label>
                                         <input
+                                            id="github"
                                             type="text"
                                             value={github}
                                             onChange={e => setGithub(e.target.value)}
@@ -417,9 +422,10 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Specializations</label>
+                                    <label htmlFor="specializations" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Specializations</label>
                                     <div className="flex gap-2">
                                         <input
+                                            id="specializations"
                                             type="text"
                                             value={newSkill}
                                             onChange={e => setNewSkill(e.target.value)}
