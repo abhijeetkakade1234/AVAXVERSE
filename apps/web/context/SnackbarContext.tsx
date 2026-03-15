@@ -47,7 +47,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
                                 'info'}
                     </span>
                     <p className="font-medium text-sm">{snackbar.message}</p>
-                    <button onClick={closeSnackbar} className="ml-2 hover:opacity-70 transition-opacity">
+                    <button onClick={closeSnackbar} aria-label="Close notification" className="ml-2 hover:opacity-70 transition-opacity">
                         <span className="material-symbols-outlined text-sm">close</span>
                     </button>
                 </div>
