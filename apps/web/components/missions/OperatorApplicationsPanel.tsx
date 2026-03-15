@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useReadContract, useReadContracts } from 'wagmi'
 import { X, Search, SlidersHorizontal, Users, Star, Briefcase, ChevronLeft, ChevronRight, CheckCircle, FileText } from 'lucide-react'
@@ -37,7 +37,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
     profile: Profile | undefined
     canSelect: boolean
     isBusy: boolean
-    onSelect: () => void
+    onSelect: (addr: string) => void
 }) {
     const { data: application } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -121,7 +121,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
                 {/* Select */}
                 {canSelect && (
                     <button
-                        onClick={onSelect}
+                        onClick={() => onSelect(operator)}
                         disabled={isBusy}
                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20"
                     >
@@ -222,6 +222,17 @@ export function OperatorApplicationsPanel({
             window.removeEventListener('keydown', onKey)
         }
     }, [open])
+
+    // ⚡ Bolt Performance Optimization:
+    // Memoizing the handleSelect callback ensures we pass a stable reference to the
+    // ApplicantRow component inside the .map loop. Previously, passing an inline anonymous
+    // function caused the ApplicantRow (and its expensive useReadContract hooks) to re-render
+    // on every keystroke when filtering applications, breaking the React.memo optimization.
+    // Impact: Prevents up to 100 unnecessary re-renders when typing in the search bar.
+    const handleSelect = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     return (
         <div className="relative">
@@ -330,7 +341,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={() => { onSelect(addr); setOpen(false) }}
+                                            onSelect={handleSelect}
                                         />
                                     </div>
                                 ))
