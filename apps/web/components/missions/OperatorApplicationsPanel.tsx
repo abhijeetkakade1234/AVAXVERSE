@@ -37,7 +37,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
     profile: Profile | undefined
     canSelect: boolean
     isBusy: boolean
-    onSelect: () => void
+    onSelect: (addr: string) => void
 }) {
     const { data: application } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -121,7 +121,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
                 {/* Select */}
                 {canSelect && (
                     <button
-                        onClick={onSelect}
+                        onClick={() => onSelect(operator)}
                         disabled={isBusy}
                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20"
                     >
@@ -222,6 +222,11 @@ export function OperatorApplicationsPanel({
             window.removeEventListener('keydown', onKey)
         }
     }, [open])
+
+    const handleSelectApplicant = React.useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     return (
         <div className="relative">
@@ -330,7 +335,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={() => { onSelect(addr); setOpen(false) }}
+                                            onSelect={handleSelectApplicant}
                                         />
                                     </div>
                                 ))
