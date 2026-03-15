@@ -285,7 +285,12 @@ contract Escrow is IEscrow, ReentrancyGuard {
     _state = State.RELEASED;
 
     if (fee > 0 && feeRecipient != address(0)) {
-      (bool feeOk, ) = feeRecipient.call{value: fee}('');
+      bool feeOk;
+      if (feeRecipient == msg.sender) {
+        (feeOk, ) = feeRecipient.call{value: fee}('');
+      } else {
+        (feeOk, ) = feeRecipient.call{value: fee, gas: 50000}('');
+      }
       if (!feeOk) {
         pendingWithdrawals[feeRecipient] += fee;
         emit WithdrawalFailed(feeRecipient, fee);
@@ -306,7 +311,12 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
   function _safeTransfer(address to, uint256 amount) internal {
     if (amount == 0) return;
-    (bool ok, ) = to.call{value: amount}('');
+    bool ok;
+    if (to == msg.sender) {
+      (ok, ) = to.call{value: amount}('');
+    } else {
+      (ok, ) = to.call{value: amount, gas: 50000}('');
+    }
     if (!ok) {
       pendingWithdrawals[to] += amount;
       emit WithdrawalFailed(to, amount);
