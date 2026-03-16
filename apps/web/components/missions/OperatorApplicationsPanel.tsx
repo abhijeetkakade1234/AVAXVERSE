@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useReadContract, useReadContracts } from 'wagmi'
 import { X, Search, SlidersHorizontal, Users, Star, Briefcase, ChevronLeft, ChevronRight, CheckCircle, FileText } from 'lucide-react'
@@ -37,7 +37,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
     profile: Profile | undefined
     canSelect: boolean
     isBusy: boolean
-    onSelect: () => void
+    onSelect: (addr: string) => void
 }) {
     const { data: application } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -121,7 +121,7 @@ const ApplicantRow = React.memo(function ApplicantRow({
                 {/* Select */}
                 {canSelect && (
                     <button
-                        onClick={onSelect}
+                        onClick={() => onSelect(operator)}
                         disabled={isBusy}
                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20"
                     >
@@ -166,6 +166,11 @@ export function OperatorApplicationsPanel({
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState('')
     const [repFilter, setRepFilter] = useState('Any')
+
+    const handleSelect = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
     const [page, setPage] = useState(1)
     const searchRef = useRef<HTMLInputElement>(null)
 
@@ -330,7 +335,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={() => { onSelect(addr); setOpen(false) }}
+                                            onSelect={handleSelect}
                                         />
                                     </div>
                                 ))
