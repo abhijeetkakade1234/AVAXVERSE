@@ -188,7 +188,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     string calldata metadataURI
   ) external payable notBlocked(msg.sender) nonReentrant {
     if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
-    if (bytes(title).length == 0) revert InvalidTitle();
+    if (bytes(title).length == 0 || bytes(title).length > 100) revert InvalidTitle();
     if (budget == 0) revert InvalidBudget();
     if (msg.value != clientCommitmentWei) revert InvalidStake();
 
@@ -568,7 +568,9 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
   function _safeTransfer(address to, uint256 amount) internal {
     if (amount == 0) return;
-    (bool ok, ) = to.call{value: amount}('');
+    // Cap gas at 50k to prevent external contract from gas griefing
+    // and blocking the rest of the transaction.
+    (bool ok, ) = to.call{value: amount, gas: 50000}('');
     if (!ok) {
       pendingWithdrawals[to] += amount;
       emit WithdrawalFailed(to, amount);
