@@ -95,7 +95,7 @@ function MissionsContent() {
                                         onChange={e => setSearch(e.target.value)}
                                     />
                                     {search && (
-                                        <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-dark transition-colors text-xs font-bold">X</button>
+                                        <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted-light hover:text-text-dark transition-colors text-xs font-bold" aria-label="Clear search">X</button>
                                     )}
                                 </div>
 

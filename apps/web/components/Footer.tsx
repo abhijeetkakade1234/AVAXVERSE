@@ -51,7 +51,7 @@ export default function Footer() {
                     <div className="flex flex-col gap-6">
                         <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Community</h4>
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
-                            <a href="https://x.com/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
+                            <a href="https://x.com/avaxverse67" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
                             <a className="hover:text-primary transition-colors cursor-pointer">Discord</a>
                             <a href="https://github.com/abhijeetkakade1234/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
                         </div>
