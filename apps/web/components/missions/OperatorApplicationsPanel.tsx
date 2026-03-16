@@ -217,6 +217,11 @@ export function OperatorApplicationsPanel({
         if (open) setTimeout(() => searchRef.current?.focus(), 80)
     }, [open])
 
+    const handleSelectApplicant = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
+
     useEffect(() => {
         if (!open) return
         document.body.style.overflow = 'hidden'
@@ -340,7 +345,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={handleSelectOperator}
+                                            onSelect={handleSelectApplicant}
                                         />
                                     </div>
                                 ))
