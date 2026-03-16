@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useReadContract, useReadContracts } from 'wagmi'
 import { X, Search, SlidersHorizontal, Users, Star, Briefcase, ChevronLeft, ChevronRight, CheckCircle, FileText } from 'lucide-react'
@@ -21,7 +21,10 @@ type Profile = {
 }
 
 // ─── Operator entry: two-line card inside the modal ────────────────────────
-function ApplicantRow({
+// ⚡ Bolt Performance Optimization:
+// Memoizing ApplicantRow prevents expensive re-renders (involving multiple Wagmi useReadContract hooks)
+// on every keystroke when filtering or searching applications.
+const ApplicantRow = React.memo(function ApplicantRow({
     missionId,
     operator,
     profile,
@@ -34,7 +37,7 @@ function ApplicantRow({
     profile: Profile | undefined
     canSelect: boolean
     isBusy: boolean
-    onSelect: () => void
+    onSelect: (addr: string) => void
 }) {
     const { data: application } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -118,7 +121,7 @@ function ApplicantRow({
                 {/* Select */}
                 {canSelect && (
                     <button
-                        onClick={onSelect}
+                        onClick={() => onSelect(operator)}
                         disabled={isBusy}
                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold disabled:opacity-40 hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20"
                     >
@@ -142,7 +145,7 @@ function ApplicantRow({
             )}
         </div>
     )
-}
+})
 
 // ─── Main component ─────────────────────────────────────────────────────────
 interface OperatorApplicationsPanelProps {
@@ -199,6 +202,11 @@ export function OperatorApplicationsPanel({
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
 
     useEffect(() => { setPage(1) }, [search, repFilter])
+
+    const handleSelectOperator = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     const paginated = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE
@@ -292,7 +300,7 @@ export function OperatorApplicationsPanel({
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-11 pr-9 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all placeholder:opacity-40"
                                 />
                                 {search && (
-                                    <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 text-xs font-bold">✕</button>
+                                    <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 text-xs font-bold" aria-label="Clear search">✕</button>
                                 )}
                             </div>
                             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 sm:w-auto">
@@ -327,7 +335,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={() => { onSelect(addr); setOpen(false) }}
+                                            onSelect={handleSelectOperator}
                                         />
                                     </div>
                                 ))

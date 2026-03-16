@@ -188,7 +188,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     string calldata metadataURI
   ) external payable notBlocked(msg.sender) nonReentrant {
     if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
-    if (bytes(title).length == 0) revert InvalidTitle();
+    if (bytes(title).length == 0 || bytes(title).length > 100) revert InvalidTitle();
     if (budget == 0) revert InvalidBudget();
     if (msg.value != clientCommitmentWei) revert InvalidStake();
 
