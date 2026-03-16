@@ -6,3 +6,7 @@
 **Vulnerability:** The application was missing standard HTTP security headers, leaving it potentially vulnerable to clickjacking and MIME-type sniffing.
 **Learning:** Added security headers in `next.config.ts` to enforce Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and X-DNS-Prefetch-Control.
 **Prevention:** Always include a robust set of security headers in the Next.js configuration to mitigate common web vulnerabilities.
+## 2023-10-27 - Missing Input Length Limits in Identity and Job Creation
+**Vulnerability:** The `IdentityRegistry.sol` and `EscrowFactory.sol` contracts did not enforce maximum length bounds on user-supplied strings such as profile names and job titles. An attacker could register an extremely long name or create a job with an excessively large title, causing state bloat and potentially leading to Out-of-Gas (DoS) errors for any smart contract or frontend trying to read the state.
+**Learning:** Even if an application correctly checks that required strings are not empty (`length > 0`), the absence of an upper bound can still be weaponized. Unbounded input sizes stored on-chain represent an attack vector for state exhaustion.
+**Prevention:** Always enforce strict upper bounds on all user-supplied variable-length inputs (such as strings and bytes) before writing them to on-chain storage.
