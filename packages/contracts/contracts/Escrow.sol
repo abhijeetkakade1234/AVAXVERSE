@@ -285,7 +285,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     _state = State.RELEASED;
 
     if (fee > 0 && feeRecipient != address(0)) {
-      (bool feeOk, ) = feeRecipient.call{value: fee}('');
+      (bool feeOk, ) = feeRecipient.call{value: fee, gas: 50000}('');
       if (!feeOk) {
         pendingWithdrawals[feeRecipient] += fee;
         emit WithdrawalFailed(feeRecipient, fee);

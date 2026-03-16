@@ -6,6 +6,10 @@
 **Vulnerability:** The application was missing standard HTTP security headers, leaving it potentially vulnerable to clickjacking and MIME-type sniffing.
 **Learning:** Added security headers in `next.config.ts` to enforce Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and X-DNS-Prefetch-Control.
 **Prevention:** Always include a robust set of security headers in the Next.js configuration to mitigate common web vulnerabilities.
+## 2023-10-27 - EIP-150 Gas Griefing in Push Payments
+**Vulnerability:** The `_safeTransfer` and `_releaseFunds` functions used `call{value: amount}('')` without gas limits for unavoidably pushing payments, allowing malicious recipient contracts to consume all available gas and grief the transaction under EIP-150 rules (causing failures in legitimate execution flows).
+**Learning:** Even when wrapping transfers in internal functions that log failures and use push payment alternatives (like tracking failed withdrawals), giving the recipient unbounded gas limits opens up vector attacks for gas griefing.
+**Prevention:** Always specify a strict gas limit (e.g., `gas: 50000`) when making unavoidable push payments (`call{value: ...}`) to untrusted addresses, to prevent malicious contracts from wasting caller gas.
 ## 2025-05-18 - Information Exposure in Profile Submission
 **Vulnerability:** The application was logging user-provided profile data (such as name, base64 profile pictures, bio, and social links) directly to the browser console during form submission. This constitutes an information exposure vulnerability, as any script running on the page or malicious actor with physical access to the browser console could potentially extract sensitive personal data.
 **Learning:** During development, it is common to log form inputs to verify functionality. However, these `console.log` statements were left in the production build, unnecessarily leaking sensitive data. Base64 strings for images can also clutter the console and potentially cause performance issues.
