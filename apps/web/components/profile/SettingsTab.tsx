@@ -139,8 +139,6 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
             return;
         }
 
-        console.log("Submitting Profile Data:", { name, pfp, bio, twitter, github, skills });
-
         if (!name.trim()) {
             console.error("Name is required.");
             return;
@@ -241,7 +239,6 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                     ctx?.drawImage(img, 0, 0, width, height);
 
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    console.log("Compressed Image Size:", compressedBase64.length, "bytes");
                     setPfp(compressedBase64);
                 };
                 img.src = event.target?.result as string;

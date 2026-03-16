@@ -208,6 +208,11 @@ export function OperatorApplicationsPanel({
 
     useEffect(() => { setPage(1) }, [search, repFilter])
 
+    const handleSelectOperator = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
+
     const paginated = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE
         return filtered.slice(start, start + PAGE_SIZE)
@@ -216,6 +221,11 @@ export function OperatorApplicationsPanel({
     useEffect(() => {
         if (open) setTimeout(() => searchRef.current?.focus(), 80)
     }, [open])
+
+    const handleSelectApplicant = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     useEffect(() => {
         if (!open) return
@@ -227,6 +237,17 @@ export function OperatorApplicationsPanel({
             window.removeEventListener('keydown', onKey)
         }
     }, [open])
+
+    // ⚡ Bolt Performance Optimization:
+    // Memoizing the handleSelect callback ensures we pass a stable reference to the
+    // ApplicantRow component inside the .map loop. Previously, passing an inline anonymous
+    // function caused the ApplicantRow (and its expensive useReadContract hooks) to re-render
+    // on every keystroke when filtering applications, breaking the React.memo optimization.
+    // Impact: Prevents up to 100 unnecessary re-renders when typing in the search bar.
+    const handleSelect = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     return (
         <div className="relative">
