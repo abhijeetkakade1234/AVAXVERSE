@@ -7,7 +7,7 @@ import { ACTIVE_CHAIN } from '@/lib/config'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
-export default function ExplorerPage() {
+export default function ExplorePage() {
     const publicClient = usePublicClient()
     const { data: blockNumber } = useBlockNumber({ watch: true })
 

@@ -2,11 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function main() {
-  const deploymentPath = path.resolve(__dirname, '..', 'deployments', 'localhost.json');
+  const network = process.argv[2] || 'localhost';
+  const deploymentPath = path.resolve(__dirname, '..', 'deployments', `${network}.json`);
   const envPath = path.resolve(__dirname, '..', '..', '..', 'apps', 'web', '.env.local');
 
   if (!fs.existsSync(deploymentPath)) {
-    console.error("❌ Deployment file not found!");
+    console.error(`❌ Deployment file not found for network: ${network}`);
+    console.log(`Expected path: ${deploymentPath}`);
     process.exit(1);
   }
 
@@ -23,6 +25,7 @@ async function main() {
     NEXT_PUBLIC_ESCROW_FACTORY: addresses.EscrowFactory,
     NEXT_PUBLIC_AVAX_TOKEN: addresses.AVAXToken,
     NEXT_PUBLIC_AVAX_GOVERNOR: addresses.AVAXGovernor,
+    NEXT_PUBLIC_NETWORK: addresses.network || 'localhost',
   };
 
   let newEnvContent = envContent;

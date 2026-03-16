@@ -300,6 +300,7 @@ export default function ProfileLayout({ targetAddress }: ProfileLayoutProps) {
                                 isProfileLoading={isProfileLoading}
                                 displayName={displayName}
                                 refetchProfile={refetchProfile}
+                                setActiveTab={setActiveTab}
                             />
                         )}
                     </main>

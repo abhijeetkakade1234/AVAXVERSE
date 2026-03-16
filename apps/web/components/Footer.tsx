@@ -33,9 +33,9 @@ export default function Footer() {
                     <div className="flex flex-col gap-6">
                         <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Ecosystem</h4>
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
-                            <Link href="/explorer" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
+                            <Link href="/explore" className="hover:text-primary transition-colors cursor-pointer">Explorer</Link>
                             <Link href="/governance" className="hover:text-primary transition-colors cursor-pointer">Governance</Link>
-                            <Link href="/jobs" className="hover:text-primary transition-colors cursor-pointer">Mission Hub</Link>
+                            <Link href="/missions" className="hover:text-primary transition-colors cursor-pointer">Mission Hub</Link>
                             <Link href="/profile" className="hover:text-primary transition-colors cursor-pointer">My Career</Link>
                         </div>
                     </div>
@@ -51,9 +51,9 @@ export default function Footer() {
                     <div className="flex flex-col gap-6">
                         <h4 className="font-bold text-gray-900 dark:text-white uppercase tracking-widest text-xs">Community</h4>
                         <div className="flex flex-col gap-4 text-gray-500 dark:text-gray-400 font-medium">
-                            <a href="https://x.com/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
+                            <a href="https://x.com/avaxverse67" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">Twitter / X</a>
                             <a className="hover:text-primary transition-colors cursor-pointer">Discord</a>
-                            <a className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
+                            <a href="https://github.com/abhijeetkakade1234/AVAXVERSE" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors cursor-pointer">GitHub</a>
                         </div>
                     </div>
                 </div>
@@ -62,7 +62,7 @@ export default function Footer() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-medium text-gray-500">
                 <div className="flex items-center gap-3 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 px-4 py-2 rounded-full border border-green-200 dark:border-green-800/30">
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></span>
-                    Systems Operational
+                    <span className="uppercase font-bold">{process.env.NEXT_PUBLIC_NETWORK || 'Avalanche'}</span> Systems Operational
                 </div>
                 <p suppressHydrationWarning>© {new Date().getFullYear()} AVAXVERSE Ecosystem. All rights reserved.</p>
                 <div className="flex gap-8">

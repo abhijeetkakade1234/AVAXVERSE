@@ -20,7 +20,7 @@ export default function PillarCard({
   imgPadding = "bg-white/10"
 }: PillarCardProps) {
   return (
-    <div className={`snap-start flex-none w-[320px] h-[450px] ${bg} rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/20 shadow-xl`}>
+    <div className={`snap-start flex-none w-[320px] h-[450px] ${bg} rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden group border border-white/20 shadow-xl fluid-touch cursor-default hover:shadow-2xl`}>
       <div className="relative z-10">
         <h3 className={`text-3xl font-bold ${textColor} mb-4`}>
           {title}

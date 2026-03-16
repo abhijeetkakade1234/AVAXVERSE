@@ -18,6 +18,7 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
   // --- State ---
   mapping(address => Profile) private _profiles;
   mapping(address => bool) private _authorizedUpdaters;
+  mapping(bytes32 => address) private _nameToAddress;
   IAVAXToken public avaxToken;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
@@ -45,12 +46,6 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
 
   // --- External Functions ---
 
-  /**
-   * @notice Register a new DID-based profile. One per address.
-   * @param name Display name for the user.
-   * @param pfp Profile picture URI.
-   * @param metadataURI IPFS/Arweave URI with extended profile data.
-   */
   function register(
     string calldata name,
     string calldata pfp,
@@ -58,6 +53,8 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
   ) external override {
     require(!_profiles[msg.sender].exists, 'IdentityRegistry: already registered');
     require(bytes(name).length > 0, 'IdentityRegistry: name required');
+
+    _reserveName(name, msg.sender);
 
     string memory did = _buildDID(msg.sender);
 
@@ -75,9 +72,6 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     emit ProfileRegistered(msg.sender, did, block.timestamp);
   }
 
-  /**
-   * @notice Update an existing profile.
-   */
   function updateProfile(
     string calldata name,
     string calldata pfp,
@@ -86,6 +80,12 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     require(bytes(name).length > 0, 'IdentityRegistry: name required');
 
     Profile storage profile = _profiles[msg.sender];
+
+    if (keccak256(bytes(profile.name)) != keccak256(bytes(name))) {
+      _releaseName(profile.name);
+      _reserveName(name, msg.sender);
+    }
+
     profile.name = name;
     profile.pfp = pfp;
     profile.metadataURI = metadataURI;
@@ -93,9 +93,6 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     emit ProfileUpdated(msg.sender, name, pfp, metadataURI);
   }
 
-  /**
-   * @notice Update the IPFS/Arweave metadata URI of an existing profile.
-   */
   function updateMetadata(
     string calldata metadataURI
   ) external override onlyRegistered(msg.sender) {
@@ -108,9 +105,6 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     );
   }
 
-  /**
-   * @notice Called by authorized contracts (e.g., Escrow) to increment reputation.
-   */
   function incrementReputation(
     address user,
     uint256 amount
@@ -119,21 +113,14 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     emit ReputationUpdated(user, _profiles[user].reputationScore);
 
     if (address(avaxToken) != address(0)) {
-      // Mint 1 whole token (assuming 18 decimals) per absolute reputation point
       avaxToken.mint(user, amount * 10 ** 18);
     }
   }
 
-  /**
-   * @notice Authorize a contract to update reputation scores.
-   */
   function setAuthorizedUpdater(address updater, bool authorized) external onlyOwner {
     _authorizedUpdaters[updater] = authorized;
   }
 
-  /**
-   * @notice Set the AVAXToken contract to mint governance power based on reputation.
-   */
   function setAVAXToken(address _token) external onlyOwner {
     avaxToken = IAVAXToken(_token);
   }
@@ -147,7 +134,26 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     return _profiles[user].exists;
   }
 
+  function isNameAvailable(string calldata name) external view override returns (bool) {
+    if (bytes(name).length == 0) return false;
+    bytes32 nameHash = keccak256(bytes(name));
+    return _nameToAddress[nameHash] == address(0);
+  }
+
   // --- Internal Helpers ---
+  function _reserveName(string memory name, address user) internal {
+    if (!this.isNameAvailable(name)) revert NameAlreadyTaken(name);
+    bytes32 nameHash = keccak256(bytes(name));
+    _nameToAddress[nameHash] = user;
+    emit NameReserved(user, name);
+  }
+
+  function _releaseName(string memory name) internal {
+    bytes32 nameHash = keccak256(bytes(name));
+    delete _nameToAddress[nameHash];
+    emit NameReleased(name);
+  }
+
   function _buildDID(address user) internal pure returns (string memory) {
     return string.concat('did:avax:', Strings.toHexString(uint160(user), 20));
   }

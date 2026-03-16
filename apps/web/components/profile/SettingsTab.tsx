@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { Loader2, X, Twitter, Github } from 'lucide-react';
 import { CONTRACT_ADDRESSES } from '@/lib/config';
 import { IDENTITY_REGISTRY_ABI } from '@/lib/abis';
@@ -21,9 +21,10 @@ interface SettingsTabProps {
     isProfileLoading: boolean;
     displayName: string;
     refetchProfile: () => void;
+    setActiveTab: (tab: 'profile' | 'achievements' | 'missions' | 'settings') => void;
 }
 
-export default function SettingsTab({ profile, isProfileLoading, displayName, refetchProfile }: SettingsTabProps) {
+export default function SettingsTab({ profile, isProfileLoading, displayName, refetchProfile, setActiveTab }: SettingsTabProps) {
     const [isEditing, setIsEditing] = useState(false);
 
     // Form States
@@ -35,6 +36,47 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
     const [skills, setSkills] = useState<string[]>([]);
     const [newSkill, setNewSkill] = useState('');
     const [isDragging, setIsDragging] = useState(false);
+
+    // Username Validation States
+    const [validatedName, setValidatedName] = useState(name);
+
+    // Debounce username validation — always use setTimeout to avoid setState-in-effect errors
+    useEffect(() => {
+        const delay = !name.trim() || name === (profile?.name || '') ? 0 : 300;
+        const timer = setTimeout(() => {
+            setValidatedName(name);
+        }, delay);
+        return () => clearTimeout(timer);
+    }, [name, profile?.name]);
+
+    const { data: isNameAvailable, isLoading: isCheckingName } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'isNameAvailable',
+        args: [validatedName],
+        query: {
+            enabled: !!validatedName && validatedName !== (profile?.name || ''),
+        }
+    });
+
+    const isNameTaken = useMemo(() => {
+        if (!validatedName || validatedName === (profile?.name || '')) return false;
+        return isNameAvailable === false;
+    }, [validatedName, isNameAvailable, profile?.name]);
+
+    const isTyping = name !== validatedName;
+    const isChecking = isTyping || isCheckingName;
+
+    const canSubmit = useMemo(() => {
+        if (!name.trim()) return false;
+        // If typing matches validated name and not checking, use validation result
+        if (name === validatedName && !isChecking) {
+            if (name === (profile?.name || '')) return true;
+            return isNameAvailable === true;
+        }
+        // Otherwise, only allow submit if it's the original name
+        return name === (profile?.name || '');
+    }, [name, validatedName, isChecking, isNameAvailable, profile?.name]);
 
     // Sync form with profile data when it loads
     useEffect(() => {
@@ -79,11 +121,15 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
     useEffect(() => {
         if (isSuccess) {
             setTimeout(() => {
+                // If the user just registered (didn't exist before success), redirect to profile tab
+                if (profile && !profile.exists) {
+                    setActiveTab('profile');
+                }
                 setIsEditing(false);
                 refetchProfile();
             }, 0);
         }
-    }, [isSuccess, refetchProfile]);
+    }, [isSuccess, refetchProfile, profile, setActiveTab]);
 
     async function handleSave(e: React.FormEvent) {
         e.preventDefault();
@@ -129,11 +175,16 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                 console.warn("Cannot save: Profile state unknown.");
             }
         } catch (error: unknown) {
-            console.error("Caught error during writeContract invocation:", error);
             const translated = translateError(error);
-            if (translated.includes('cancelled')) {
+            const isCancellation = 
+                translated.toLowerCase().includes('cancelled') || 
+                translated.toLowerCase().includes('denied') ||
+                translated.toLowerCase().includes('rejected');
+            
+            if (isCancellation) {
                 showSnackbar(translated, 'info');
             } else {
+                console.error("Caught error during writeContract invocation:", error);
                 showSnackbar(translated, 'error');
             }
         }
@@ -252,19 +303,44 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                         <form onSubmit={handleSave} className="space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Display Name</label>
-                                    <input
-                                        type="text"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        className="w-full bg-white/50 dark:bg-black/20 border border-white/40 dark:border-white/10 rounded-2xl p-4 text-gray-900 dark:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#8B82F6]"
-                                        placeholder="e.g. Alex.avax"
-                                        required
-                                    />
+                                    <label htmlFor="display-name" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Display Name</label>
+                                    <div className="relative">
+                                        <input
+                                            id="display-name"
+                                            type="text"
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            className={`w-full bg-white/50 dark:bg-black/20 border rounded-2xl p-4 text-gray-900 dark:text-[#F3F4F6] focus:outline-none focus:ring-2 focus:ring-[#8B82F6] ${isNameTaken ? 'border-red-500/50 ring-red-500/20' : 'border-white/40 dark:border-white/10'
+                                                }`}
+                                            placeholder="e.g. Alex.avax"
+                                            required
+                                        />
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                            {isChecking && (
+                                                <Loader2 className="animate-spin text-[#8B82F6]" size={18} />
+                                            )}
+                                            {!isChecking && name && name !== (profile?.name || '') && (
+                                                isNameTaken ? (
+                                                    <span className="text-red-500 text-xs font-bold uppercase flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-sm">cancel</span>
+                                                        Taken
+                                                    </span>
+                                                ) : isNameAvailable === true ? (
+                                                    <span className="text-green-500 text-xs font-bold uppercase flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-sm">check_circle</span>
+                                                        Available
+                                                    </span>
+                                                ) : null
+                                            )}
+                                        </div>
+                                    </div>
+                                    {isNameTaken && (
+                                        <p className="text-red-500 text-xs px-1">This name is already registered to another user.</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Profile Picture</label>
+                                    <label htmlFor="profile-picture" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Profile Picture</label>
                                     <div
                                         className={`relative group h-48 rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3 overflow-hidden ${isDragging
                                             ? 'border-[#8B82F6] bg-[#8B82F6]/10'
@@ -295,6 +371,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                             </>
                                         )}
                                         <input
+                                            id="profile-picture"
                                             type="file"
                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                             onChange={handleFileChange}
@@ -304,8 +381,9 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Bio / Metadata</label>
+                                    <label htmlFor="bio-metadata" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Bio / Metadata</label>
                                     <textarea
+                                        id="bio-metadata"
                                         value={bio}
                                         onChange={e => setBio(e.target.value)}
                                         rows={3}
@@ -316,10 +394,11 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+                                        <label htmlFor="twitter" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
                                             <Twitter size={14} /> X (Twitter)
                                         </label>
                                         <input
+                                            id="twitter"
                                             type="text"
                                             value={twitter}
                                             onChange={e => setTwitter(e.target.value)}
@@ -328,10 +407,11 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+                                        <label htmlFor="github" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
                                             <Github size={14} /> GitHub
                                         </label>
                                         <input
+                                            id="github"
                                             type="text"
                                             value={github}
                                             onChange={e => setGithub(e.target.value)}
@@ -342,9 +422,10 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Specializations</label>
+                                    <label htmlFor="specializations" className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Specializations</label>
                                     <div className="flex gap-2">
                                         <input
+                                            id="specializations"
                                             type="text"
                                             value={newSkill}
                                             onChange={e => setNewSkill(e.target.value)}
@@ -369,7 +450,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                         {skills.map((skill, index) => (
                                             <span key={index} className="px-3 py-1 bg-[#8B82F6]/10 text-[#8B82F6] rounded-full text-xs font-medium border border-[#8B82F6]/20 flex items-center gap-1 group">
                                                 {skill}
-                                                <button type="button" onClick={() => removeSkill(skill)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button type="button" onClick={() => removeSkill(skill)} className="opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`Remove skill ${skill}`}>
                                                     <X size={12} className="hover:text-red-400" />
                                                 </button>
                                             </span>
@@ -382,15 +463,15 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(false)}
-                                    className="flex-1 py-4 px-6 rounded-2xl font-bold bg-white/20 dark:bg-[#1E1B4B] text-gray-900 dark:text-[#F3F4F6] hover:bg-white/40 dark:hover:bg-white/10 transition-colors border border-white/40 dark:border-white/10"
+                                    className="flex-1 py-4 px-6 rounded-2xl font-bold bg-white/20 dark:bg-[#1E1B4B] text-gray-900 dark:text-[#F3F4F6] hover:bg-white/40 dark:hover:bg-white/10 transition-colors border border-white/40 dark:border-white/10 fluid-touch"
                                     disabled={isPending || isConfirming || isProfileLoading}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isPending || isConfirming || isProfileLoading || !name.trim()}
-                                    className="flex-1 flex justify-center items-center gap-2 bg-[#8B82F6] hover:bg-[#8B82F6]/90 text-white py-4 px-6 rounded-2xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    disabled={isPending || isConfirming || isProfileLoading || !canSubmit}
+                                    className="flex-1 flex justify-center items-center gap-2 bg-[#8B82F6] hover:bg-[#8B82F6]/90 text-white py-4 px-6 rounded-2xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all fluid-touch"
                                 >
                                     {isPending || isConfirming ? (
                                         <>
