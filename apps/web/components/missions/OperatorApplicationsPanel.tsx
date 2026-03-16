@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useReadContract, useReadContracts } from 'wagmi'
 import { X, Search, SlidersHorizontal, Users, Star, Briefcase, ChevronLeft, ChevronRight, CheckCircle, FileText } from 'lucide-react'
@@ -203,6 +203,11 @@ export function OperatorApplicationsPanel({
 
     useEffect(() => { setPage(1) }, [search, repFilter])
 
+    const handleSelectOperator = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
+
     const paginated = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE
         return filtered.slice(start, start + PAGE_SIZE)
@@ -335,7 +340,7 @@ export function OperatorApplicationsPanel({
                                             profile={profile}
                                             canSelect={canSelect}
                                             isBusy={isBusy}
-                                            onSelect={handleSelectApplicant}
+                                            onSelect={handleSelectOperator}
                                         />
                                     </div>
                                 ))
