@@ -92,7 +92,7 @@ const ManageMissionCard = React.memo(function ManageMissionCard({ missionId, mis
                         <span className="text-lg font-black tracking-tight dark:text-white">{budgetAvax} <span className="text-xs font-bold opacity-60">AVAX</span></span>
                     </div>
                     <Link href={`/missions/${missionId}`}>
-                        <button className="w-10 h-10 rounded-full bg-white/20 dark:bg-white/5 border border-white/40 dark:border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group-hover:scale-110 active:scale-95 fluid-touch" title="View mission">
+                        <button aria-label="View mission details" className="w-10 h-10 rounded-full bg-white/20 dark:bg-white/5 border border-white/40 dark:border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all group-hover:scale-110 active:scale-95 fluid-touch" title="View mission">
                             <ArrowRight size={18} className="dark:text-white" />
                         </button>
                     </Link>
