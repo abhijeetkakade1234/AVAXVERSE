@@ -6,3 +6,7 @@
 **Vulnerability:** The application was missing standard HTTP security headers, leaving it potentially vulnerable to clickjacking and MIME-type sniffing.
 **Learning:** Added security headers in `next.config.ts` to enforce Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and X-DNS-Prefetch-Control.
 **Prevention:** Always include a robust set of security headers in the Next.js configuration to mitigate common web vulnerabilities.
+## 2025-05-18 - Information Exposure in Profile Submission
+**Vulnerability:** The application was logging user-provided profile data (such as name, base64 profile pictures, bio, and social links) directly to the browser console during form submission. This constitutes an information exposure vulnerability, as any script running on the page or malicious actor with physical access to the browser console could potentially extract sensitive personal data.
+**Learning:** During development, it is common to log form inputs to verify functionality. However, these `console.log` statements were left in the production build, unnecessarily leaking sensitive data. Base64 strings for images can also clutter the console and potentially cause performance issues.
+**Prevention:** Avoid logging user-provided data, especially personal identifiable information (PII), directly to the console. Always review and remove debug `console.log` statements before deploying code to production. If logging is necessary, use a structured logging system that filters out sensitive information.
