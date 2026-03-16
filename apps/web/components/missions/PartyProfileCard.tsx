@@ -21,6 +21,7 @@ type Profile = {
 
 // ⚡ Bolt Performance Optimization:
 // Memoizing PartyProfileCard prevents expensive re-renders (involving Wagmi useReadContract hooks)
+// when parent component state updates frequently.
 export const PartyProfileCard = React.memo(function PartyProfileCard({ role, addr }: { role: string; addr: string }) {
     const { data: profile } = useReadContract({
         address: CONTRACT_ADDRESSES.IdentityRegistry,

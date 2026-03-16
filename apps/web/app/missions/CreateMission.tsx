@@ -170,7 +170,7 @@ export default function CreateMission() {
                                 {form.tags.map(tag => (
                                     <span key={tag} className="px-3 py-1 bg-primary text-white rounded-full text-xs font-bold flex items-center gap-1">
                                         {tag}
-                                        <button type="button" onClick={() => removeTag(tag)} className="hover:opacity-70 transition-opacity leading-none">
+                                        <button type="button" onClick={() => removeTag(tag)} className="hover:opacity-70 transition-opacity leading-none" aria-label={`Remove tag ${tag}`}>
                                             <span className="material-symbols-outlined text-xs">close</span>
                                         </button>
                                     </span>
