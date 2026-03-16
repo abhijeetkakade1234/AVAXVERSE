@@ -568,7 +568,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
 
   function _safeTransfer(address to, uint256 amount) internal {
     if (amount == 0) return;
-    (bool ok, ) = to.call{value: amount}('');
+    (bool ok, ) = to.call{value: amount, gas: 50000}('');
     if (!ok) {
       pendingWithdrawals[to] += amount;
       emit WithdrawalFailed(to, amount);
