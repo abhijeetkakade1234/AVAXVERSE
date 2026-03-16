@@ -203,6 +203,11 @@ export function OperatorApplicationsPanel({
 
     useEffect(() => { setPage(1) }, [search, repFilter])
 
+    const handleSelectOperator = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
+
     const paginated = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE
         return filtered.slice(start, start + PAGE_SIZE)
@@ -211,6 +216,11 @@ export function OperatorApplicationsPanel({
     useEffect(() => {
         if (open) setTimeout(() => searchRef.current?.focus(), 80)
     }, [open])
+
+    const handleSelectApplicant = useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
 
     useEffect(() => {
         if (!open) return
