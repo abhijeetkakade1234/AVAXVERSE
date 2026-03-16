@@ -306,6 +306,8 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
   function _safeTransfer(address to, uint256 amount) internal {
     if (amount == 0) return;
+    // Cap gas at 50k to prevent external contract from gas griefing
+    // and blocking the rest of the transaction.
     (bool ok, ) = to.call{value: amount, gas: 50000}('');
     if (!ok) {
       pendingWithdrawals[to] += amount;
