@@ -228,6 +228,11 @@ export function OperatorApplicationsPanel({
         }
     }, [open])
 
+    const handleSelectApplicant = React.useCallback((addr: string) => {
+        onSelect(addr)
+        setOpen(false)
+    }, [onSelect])
+
     return (
         <div className="relative">
             {/* ── Compact trigger card ──────────────────────────────────── */}
