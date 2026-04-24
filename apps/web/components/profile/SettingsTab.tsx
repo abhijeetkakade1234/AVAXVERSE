@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { Loader2, X, Twitter, Github } from 'lucide-react';
 import { CONTRACT_ADDRESSES } from '@/lib/config';
 import { IDENTITY_REGISTRY_ABI } from '@/lib/abis';
 import { useSnackbar } from '@/context/SnackbarContext';
-import { translateError } from '@/lib/error-translator';
+import { isUserRejection, translateError } from '@/lib/error-translator';
 
 interface ProfileData {
     exists: boolean;
@@ -24,7 +24,16 @@ interface SettingsTabProps {
     setActiveTab: (tab: 'profile' | 'achievements' | 'missions' | 'settings') => void;
 }
 
+const BASE_ROLE_CLIENT = 1n;
+const BASE_ROLE_OPERATOR = 2n;
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB raw file limit before compression
+const MAX_IMAGE_DIMENSION = 160; // keep on-chain payload small
+const IMAGE_QUALITY = 0.65;
+const MAX_PFP_DATA_URI_LENGTH = 4200; // guard against gas-heavy profile writes
+const MAX_METADATA_URI_LENGTH = 8000;
+
 export default function SettingsTab({ profile, isProfileLoading, displayName, refetchProfile, setActiveTab }: SettingsTabProps) {
+    const { address } = useAccount();
     const [isEditing, setIsEditing] = useState(false);
 
     // Form States
@@ -36,6 +45,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
     const [skills, setSkills] = useState<string[]>([]);
     const [newSkill, setNewSkill] = useState('');
     const [isDragging, setIsDragging] = useState(false);
+    const [selectedBaseRole, setSelectedBaseRole] = useState<'CLIENT' | 'OPERATOR'>('CLIENT');
 
     // Username Validation States
     const [validatedName, setValidatedName] = useState(name);
@@ -66,6 +76,24 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
 
     const isTyping = name !== validatedName;
     const isChecking = isTyping || isCheckingName;
+    const { data: baseRole } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'getBaseRole',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address && !!profile?.exists },
+    }) as { data: bigint | number | undefined };
+    const normalizedBaseRole = typeof baseRole === 'bigint'
+        ? baseRole
+        : typeof baseRole === 'number'
+            ? BigInt(baseRole)
+            : undefined;
+    const baseRoleLabel =
+        normalizedBaseRole === BASE_ROLE_CLIENT
+            ? 'CLIENT'
+            : normalizedBaseRole === BASE_ROLE_OPERATOR
+                ? 'OPERATOR'
+                : 'NOT SET';
 
     const canSubmit = useMemo(() => {
         if (!name.trim()) return false;
@@ -85,6 +113,7 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                 // Auto-enter edit mode for new users
                 const timer = setTimeout(() => {
                     setIsEditing(true);
+                    setSelectedBaseRole('CLIENT');
                 }, 0);
                 return () => clearTimeout(timer);
             } else if (!isEditing) {
@@ -149,17 +178,28 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
             socials: { twitter, github },
             skills
         });
+        const metadataURI = `data:application/json,${metadata}`;
+
+        if (pfp.length > MAX_PFP_DATA_URI_LENGTH) {
+            showSnackbar('Profile image is too large for on-chain profile storage. Upload a smaller image.', 'error');
+            return;
+        }
+        if (metadataURI.length > MAX_METADATA_URI_LENGTH) {
+            showSnackbar('Profile metadata is too large. Reduce bio/skills and try again.', 'error');
+            return;
+        }
 
         try {
             // Crucial check: Only call register if we have confirmed profile.exists is false
             // If profile is undefined, we wait.
             if (profile && !profile.exists) {
                 console.log("Registering new profile...");
+                const roleToWrite = selectedBaseRole === 'OPERATOR' ? 2 : 1;
                 await writeContractAsync({
                     address: CONTRACT_ADDRESSES.IdentityRegistry,
                     abi: IDENTITY_REGISTRY_ABI,
-                    functionName: 'register',
-                    args: [name, pfp, `data:application/json,${metadata}`],
+                    functionName: 'registerWithRole',
+                    args: [name, pfp, metadataURI, roleToWrite],
                 });
             } else if (profile && profile.exists) {
                 console.log("Updating existing profile...");
@@ -167,17 +207,14 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                     address: CONTRACT_ADDRESSES.IdentityRegistry,
                     abi: IDENTITY_REGISTRY_ABI,
                     functionName: 'updateProfile',
-                    args: [name, pfp, `data:application/json,${metadata}`],
+                    args: [name, pfp, metadataURI],
                 });
             } else {
                 console.warn("Cannot save: Profile state unknown.");
             }
         } catch (error: unknown) {
             const translated = translateError(error);
-            const isCancellation = 
-                translated.toLowerCase().includes('cancelled') || 
-                translated.toLowerCase().includes('denied') ||
-                translated.toLowerCase().includes('rejected');
+            const isCancellation = isUserRejection(error);
             
             if (isCancellation) {
                 showSnackbar(translated, 'info');
@@ -208,28 +245,37 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
 
         if (file) {
             if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file.');
+                showSnackbar('Please upload an image file.', 'warning');
+                return;
+            }
+            if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+                showSnackbar('Image file is too large. Use an image under 5MB.', 'warning');
                 return;
             }
 
             const reader = new FileReader();
+            reader.onerror = () => {
+                showSnackbar('Could not read the selected image. Try another file.', 'error');
+            };
             reader.onload = (event) => {
                 const img = new Image();
+                img.onerror = () => {
+                    showSnackbar('Could not process this image. Try a different one.', 'error');
+                };
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
 
-                    const MAX_SIZE = 200;
                     if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
+                        if (width > MAX_IMAGE_DIMENSION) {
+                            height *= MAX_IMAGE_DIMENSION / width;
+                            width = MAX_IMAGE_DIMENSION;
                         }
                     } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
+                        if (height > MAX_IMAGE_DIMENSION) {
+                            width *= MAX_IMAGE_DIMENSION / height;
+                            height = MAX_IMAGE_DIMENSION;
                         }
                     }
 
@@ -238,8 +284,14 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                     const ctx = canvas.getContext('2d');
                     ctx?.drawImage(img, 0, 0, width, height);
 
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', IMAGE_QUALITY);
+                    console.log("Compressed Image Size:", compressedBase64.length, "bytes");
+                    if (compressedBase64.length > MAX_PFP_DATA_URI_LENGTH) {
+                        showSnackbar('Compressed image is still too large for on-chain profile. Try a simpler/smaller image.', 'warning');
+                        return;
+                    }
                     setPfp(compressedBase64);
+                    showSnackbar('Profile image optimized and ready.', 'success');
                 };
                 img.src = event.target?.result as string;
             };
@@ -285,6 +337,13 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                     <div className="flex items-center justify-between">
                                         <span className="text-xl font-bold dark:text-[#F3F4F6] text-gray-900">{profile?.exists ? 'Master Lvl' : 'None'}</span>
                                         <span className="material-symbols-outlined text-[#8B82F6]">workspace_premium</span>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-white/50 dark:bg-black/20 rounded-2xl border border-white/40 dark:border-white/10 md:col-span-2">
+                                    <label className="block text-xs font-bold text-[#4B5563] dark:text-[#9CA3AF] uppercase mb-2">Base Mission Role</label>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xl font-bold dark:text-[#F3F4F6] text-gray-900">{profile?.exists ? baseRoleLabel : 'Select at registration'}</span>
+                                        <span className="material-symbols-outlined text-[#8B82F6]">badge</span>
                                     </div>
                                 </div>
                             </div>
@@ -388,6 +447,37 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
                                         placeholder="Tell the ecosystem about yourself..."
                                     />
                                 </div>
+
+                                {!profile?.exists && (
+                                    <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/10 p-4">
+                                        <label className="text-sm font-semibold text-[#4B5563] dark:text-[#9CA3AF] uppercase tracking-wider">Choose Base Mission Role</label>
+                                        <p className="text-xs text-[#4B5563] dark:text-[#9CA3AF]">This is required on first registration and cannot be changed in MVP mode.</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedBaseRole('CLIENT')}
+                                                className={`rounded-xl border p-3 text-left transition-colors ${selectedBaseRole === 'CLIENT'
+                                                    ? 'border-[#8B82F6] bg-[#8B82F6]/20'
+                                                    : 'border-white/30 dark:border-white/10 bg-white/40 dark:bg-black/20'
+                                                    }`}
+                                            >
+                                                <div className="font-bold text-gray-900 dark:text-[#F3F4F6]">CLIENT</div>
+                                                <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] mt-1">Can create and fund missions.</div>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedBaseRole('OPERATOR')}
+                                                className={`rounded-xl border p-3 text-left transition-colors ${selectedBaseRole === 'OPERATOR'
+                                                    ? 'border-[#8B82F6] bg-[#8B82F6]/20'
+                                                    : 'border-white/30 dark:border-white/10 bg-white/40 dark:bg-black/20'
+                                                    }`}
+                                            >
+                                                <div className="font-bold text-gray-900 dark:text-[#F3F4F6]">OPERATOR</div>
+                                                <div className="text-xs text-[#4B5563] dark:text-[#9CA3AF] mt-1">Can apply to missions and deliver work.</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">

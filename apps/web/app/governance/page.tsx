@@ -16,7 +16,7 @@ import { useGovernance } from '@/hooks/useGovernance'
 import { formatUnits } from 'viem'
 import { usePublicClient } from 'wagmi'
 import { translateError } from '@/lib/error-translator'
-import { CONTRACT_ADDRESSES } from '@/lib/config'
+import { CONTRACT_ADDRESSES, FEATURES } from '@/lib/config'
 import { AVAX_GOVERNOR_ABI } from '@/lib/abis'
 import { useEffect, useState } from 'react'
 import { useSnackbar } from '@/context/SnackbarContext'
@@ -170,6 +170,32 @@ export default function GovernancePage() {
 
     const totalPages = Math.ceil(filteredProposals.length / pageSize)
     const paginatedProposals = filteredProposals.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+    if (!FEATURES.governance) {
+        return (
+            <div className="bg-[#B4AAFD] bg-gradient-to-b from-[#B4AAFD] via-[#9B8CFA] to-[#1A1A2E] dark:from-[#1A1A2E] dark:to-[#121222] text-gray-900 dark:text-white font-display antialiased min-h-screen flex flex-col relative">
+                <Navbar />
+                <div className="pt-32 pb-20 relative z-10 w-full flex-grow">
+                    <div className="max-w-4xl mx-auto px-4 md:px-8">
+                        <div className="glass-panel p-10 rounded-[2.5rem] border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-xl text-center space-y-4">
+                            <h1 className="text-3xl font-bold text-white">Mission-only mode</h1>
+                            <p className="text-white/70">
+                                Governance is disabled for this MVP release. Mission flow is active and optimized for shipping.
+                            </p>
+                            <Link href="/missions" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-bold">
+                                Go to Missions <ArrowUpRight size={16} />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+                <section className="px-4 md:px-8 py-20 mt-auto">
+                    <div className="max-w-7xl mx-auto w-full">
+                        <Footer />
+                    </div>
+                </section>
+            </div>
+        )
+    }
 
     return (
         <div className="bg-[#B4AAFD] bg-gradient-to-b from-[#B4AAFD] via-[#9B8CFA] to-[#1A1A2E] dark:from-[#1A1A2E] dark:to-[#121222] text-gray-900 dark:text-white font-display antialiased min-h-screen flex flex-col relative">

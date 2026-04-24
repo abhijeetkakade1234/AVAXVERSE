@@ -20,6 +20,10 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
   mapping(address => bool) private _authorizedUpdaters;
   mapping(bytes32 => address) private _nameToAddress;
   IAVAXToken public avaxToken;
+  mapping(address => uint8) private _baseRoles;
+  mapping(address => bool) private _disputeHandlers;
+  mapping(address => bool) private _admins;
+  uint256[44] private __gap;
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -28,6 +32,10 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
 
   function initialize() public initializer {
     __Ownable_init(msg.sender);
+    _admins[msg.sender] = true;
+    _disputeHandlers[msg.sender] = true;
+    emit AdminRoleUpdated(msg.sender, true);
+    emit DisputeHandlerUpdated(msg.sender, true);
   }
 
   // --- Modifiers ---
@@ -51,26 +59,17 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     string calldata pfp,
     string calldata metadataURI
   ) external override {
-    require(!_profiles[msg.sender].exists, 'IdentityRegistry: already registered');
-    require(bytes(name).length > 0, 'IdentityRegistry: name required');
-    require(bytes(name).length <= 50, 'IdentityRegistry: name too long');
+    _register(msg.sender, name, pfp, metadataURI);
+  }
 
-    _reserveName(name, msg.sender);
-
-    string memory did = _buildDID(msg.sender);
-
-    _profiles[msg.sender] = Profile({
-      did: did,
-      name: name,
-      pfp: pfp,
-      metadataURI: metadataURI,
-      verificationLevel: 0,
-      reputationScore: 0,
-      registeredAt: block.timestamp,
-      exists: true
-    });
-
-    emit ProfileRegistered(msg.sender, did, block.timestamp);
+  function registerWithRole(
+    string calldata name,
+    string calldata pfp,
+    string calldata metadataURI,
+    uint8 role
+  ) external override {
+    _register(msg.sender, name, pfp, metadataURI);
+    _setBaseRole(msg.sender, role);
   }
 
   function updateProfile(
@@ -119,12 +118,58 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     }
   }
 
+  function setVerificationLevel(
+    address user,
+    uint256 level
+  ) external override onlyUpdater onlyRegistered(user) {
+    _profiles[user].verificationLevel = level;
+    emit VerificationLevelUpdated(user, level);
+  }
+
+  function updateProfileSignals(
+    address user,
+    uint256 crossChainScore,
+    bool sybilVerified,
+    uint256 diversityScore,
+    uint256 totalUniqueClients,
+    uint256 totalUniqueOperators
+  ) external override onlyUpdater onlyRegistered(user) {
+    Profile storage profile = _profiles[user];
+    profile.crossChainScore = crossChainScore;
+    profile.sybilVerified = sybilVerified;
+    profile.diversityScore = diversityScore;
+    profile.totalUniqueClients = totalUniqueClients;
+    profile.totalUniqueOperators = totalUniqueOperators;
+    emit ProfileSignalsUpdated(
+      user,
+      crossChainScore,
+      sybilVerified,
+      diversityScore,
+      totalUniqueClients,
+      totalUniqueOperators
+    );
+  }
+
   function setAuthorizedUpdater(address updater, bool authorized) external onlyOwner {
     _authorizedUpdaters[updater] = authorized;
   }
 
   function setAVAXToken(address _token) external onlyOwner {
     avaxToken = IAVAXToken(_token);
+  }
+
+  function setInitialBaseRole(uint8 role) external override onlyRegistered(msg.sender) {
+    _setBaseRole(msg.sender, role);
+  }
+
+  function setDisputeHandler(address user, bool enabled) external override onlyOwner {
+    _disputeHandlers[user] = enabled;
+    emit DisputeHandlerUpdated(user, enabled);
+  }
+
+  function setAdminRole(address user, bool enabled) external override onlyOwner {
+    _admins[user] = enabled;
+    emit AdminRoleUpdated(user, enabled);
   }
 
   // --- Views ---
@@ -142,7 +187,62 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     return _nameToAddress[nameHash] == address(0);
   }
 
+  function getBaseRole(address user) external view override returns (uint8) {
+    return _baseRoles[user];
+  }
+
+  function isDisputeHandler(address user) external view override returns (bool) {
+    return _disputeHandlers[user];
+  }
+
+  function isAdmin(address user) external view override returns (bool) {
+    if (user == owner()) return true;
+    return _admins[user];
+  }
+
   // --- Internal Helpers ---
+  function _register(
+    address user,
+    string calldata name,
+    string calldata pfp,
+    string calldata metadataURI
+  ) internal {
+    require(!_profiles[user].exists, 'IdentityRegistry: already registered');
+    require(bytes(name).length > 0, 'IdentityRegistry: name required');
+
+    _reserveName(name, user);
+
+    string memory did = _buildDID(user);
+
+    _profiles[user] = Profile({
+      did: did,
+      name: name,
+      pfp: pfp,
+      metadataURI: metadataURI,
+      verificationLevel: 0,
+      reputationScore: 0,
+      registeredAt: block.timestamp,
+      exists: true,
+      crossChainScore: 0,
+      sybilVerified: false,
+      diversityScore: 0,
+      totalUniqueClients: 0,
+      totalUniqueOperators: 0
+    });
+
+    emit ProfileRegistered(user, did, block.timestamp);
+  }
+
+  function _setBaseRole(address user, uint8 role) internal {
+    require(_baseRoles[user] == uint8(BaseRole.NONE), 'IdentityRegistry: base role already set');
+    require(
+      role == uint8(BaseRole.CLIENT) || role == uint8(BaseRole.OPERATOR),
+      'IdentityRegistry: invalid base role'
+    );
+    _baseRoles[user] = role;
+    emit BaseRoleInitialized(user, role);
+  }
+
   function _reserveName(string memory name, address user) internal {
     if (!this.isNameAvailable(name)) revert NameAlreadyTaken(name);
     bytes32 nameHash = keccak256(bytes(name));

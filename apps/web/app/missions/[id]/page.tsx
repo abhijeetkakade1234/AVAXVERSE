@@ -3,17 +3,16 @@
 import React, { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Zap, Target } from 'lucide-react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { formatEther, encodeFunctionData } from 'viem'
+import { useAccount, usePublicClient, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { formatEther, parseAbiItem } from 'viem'
 import { useSnackbar } from '@/context/SnackbarContext'
-import { translateError } from '@/lib/error-translator'
-import { CONTRACT_ADDRESSES, ACTIVE_CHAIN } from '@/lib/config'
+import { isUserRejection, translateError } from '@/lib/error-translator'
+import { CONTRACT_ADDRESSES, ACTIVE_CHAIN, FEATURES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, ESCROW_ABI, ESCROW_STATES, IDENTITY_REGISTRY_ABI, type EscrowState } from '@/lib/abis'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Section } from '@/components/ui'
 import { type Mission, type MissionApplication } from '../types'
-import { useGovernance } from '@/hooks/useGovernance'
 import { DisputeModal } from '@/components/DisputeModal'
 import { MissionHeader } from '@/components/missions/MissionHeader'
 import { MissionStatusWidget } from '@/components/missions/MissionStatusWidget'
@@ -24,6 +23,14 @@ import { getDeliverableHref, shortAddr } from '../utils'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 const FLOW_STEPS = ['Posted', 'Applied', 'Selected', 'Accepted', 'Funded', 'Delivered', 'Closed'] as const
+
+function formatDuration(seconds: number): string {
+    const clamped = Math.max(0, seconds)
+    const minutes = Math.floor(clamped / 60)
+    const remSeconds = clamped % 60
+    if (minutes > 0) return `${minutes}m ${remSeconds}s`
+    return `${remSeconds}s`
+}
 
 export default function MissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
@@ -36,7 +43,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     const [localError, setLocalError] = useState<string | null>(null)
     const [showDisputeModal, setShowDisputeModal] = useState(false)
     const [evidenceUrl, setEvidenceUrl] = useState('')
-    const { propose } = useGovernance()
+    const disputesEnabled = FEATURES.disputes
     const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000))
     const [lastAttemptTime, setLastAttemptTime] = useState(0)
 
@@ -69,6 +76,9 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         args: connectedAddress ? [missionId, connectedAddress as `0x${string}`] : undefined,
         query: { enabled: !!connectedAddress && !!mission },
     }) as { data: MissionApplication | undefined; refetch: () => void }
+
+    const publicClient = usePublicClient()
+    const [withdrawnOperators, setWithdrawnOperators] = useState<string[]>([])
 
     const { data: userRequiredStake } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
@@ -144,7 +154,22 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     const { data: missionCooldown } = useReadContract({
         address: CONTRACT_ADDRESSES.EscrowFactory,
         abi: ESCROW_FACTORY_ABI,
-        functionName: 'applicationCooldown',
+        functionName: 'applicationCooldownSec',
+    }) as { data: bigint | undefined }
+    const { data: selectionTimeoutSec } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'selectionTimeoutSec',
+    }) as { data: bigint | undefined }
+    const { data: fundingTimeoutSec } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'fundingTimeoutSec',
+    }) as { data: bigint | undefined }
+    const { data: escrowReviewTimeoutSec } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'escrowReviewTimeoutSec',
     }) as { data: bigint | undefined }
 
     const { data: applicationStakeWei } = useReadContract({
@@ -161,10 +186,113 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         query: { enabled: !!connectedAddress },
     }) as { data: bigint | undefined }
 
+    const { data: requiredDisputeFee } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'getDisputeFee',
+        args: connectedAddress ? [connectedAddress as `0x${string}`] : undefined,
+        query: { enabled: !!connectedAddress },
+    }) as { data: bigint | undefined }
+    const { data: userBaseRole } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'getBaseRole',
+        args: connectedAddress ? [connectedAddress as `0x${string}`] : undefined,
+        query: { enabled: !!connectedAddress },
+    }) as { data: bigint | number | undefined }
+    const normalizedBaseRole = typeof userBaseRole === 'bigint'
+        ? Number(userBaseRole)
+        : userBaseRole
+
     const { showSnackbar } = useSnackbar()
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
     const explorerBase = ACTIVE_CHAIN.blockExplorers?.default?.url ?? 'https://testnet.snowtrace.io'
+    const [selectedAtTimestamp, setSelectedAtTimestamp] = useState<number | null>(null)
+    const [acceptedAtTimestamp, setAcceptedAtTimestamp] = useState<number | null>(null)
+
+    useEffect(() => {
+        let cancelled = false
+        const fetchWithdrawnOperators = async () => {
+            if (!publicClient) return
+            try {
+                const logs = await publicClient.getLogs({
+                    address: CONTRACT_ADDRESSES.EscrowFactory,
+                    event: parseAbiItem('event ApplicationStakeWithdrawn(uint256 indexed jobId, address indexed operator, uint256 amount)'),
+                    args: { jobId: missionId },
+                    fromBlock: 0n,
+                    toBlock: 'latest',
+                })
+                if (cancelled) return
+                const uniqueWithdrawn = new Set<string>()
+                for (const log of logs) {
+                    const operator = (log.args.operator as string | undefined)?.toLowerCase()
+                    const amount = log.args.amount as bigint | undefined
+                    if (operator && amount !== undefined && amount > 0n) {
+                        uniqueWithdrawn.add(operator)
+                    }
+                }
+                setWithdrawnOperators(Array.from(uniqueWithdrawn))
+            } catch {
+                if (!cancelled) setWithdrawnOperators([])
+            }
+        }
+
+        fetchWithdrawnOperators()
+        return () => {
+            cancelled = true
+        }
+    }, [publicClient, missionId, hash, isSuccess])
+
+    useEffect(() => {
+        let cancelled = false
+        const fetchStageTimestamps = async () => {
+            if (!publicClient) return
+            try {
+                const [selectedLogs, acceptedLogs] = await Promise.all([
+                    publicClient.getLogs({
+                        address: CONTRACT_ADDRESSES.EscrowFactory,
+                        event: parseAbiItem('event OperatorSelected(uint256 indexed jobId, address indexed operator)'),
+                        args: { jobId: missionId },
+                        fromBlock: 0n,
+                        toBlock: 'latest',
+                    }),
+                    publicClient.getLogs({
+                        address: CONTRACT_ADDRESSES.EscrowFactory,
+                        event: parseAbiItem('event AssignmentAccepted(uint256 indexed jobId, address indexed operator)'),
+                        args: { jobId: missionId },
+                        fromBlock: 0n,
+                        toBlock: 'latest',
+                    }),
+                ])
+
+                const latestSelected = selectedLogs[selectedLogs.length - 1]
+                const latestAccepted = acceptedLogs[acceptedLogs.length - 1]
+                const blocks = await Promise.all([
+                    latestSelected?.blockNumber !== undefined
+                        ? publicClient.getBlock({ blockNumber: latestSelected.blockNumber })
+                        : null,
+                    latestAccepted?.blockNumber !== undefined
+                        ? publicClient.getBlock({ blockNumber: latestAccepted.blockNumber })
+                        : null,
+                ])
+
+                if (cancelled) return
+                setSelectedAtTimestamp(blocks[0] ? Number(blocks[0].timestamp) : null)
+                setAcceptedAtTimestamp(blocks[1] ? Number(blocks[1].timestamp) : null)
+            } catch {
+                if (!cancelled) {
+                    setSelectedAtTimestamp(null)
+                    setAcceptedAtTimestamp(null)
+                }
+            }
+        }
+
+        fetchStageTimestamps()
+        return () => {
+            cancelled = true
+        }
+    }, [publicClient, missionId, hash, isSuccess])
 
     useEffect(() => {
         if (isSuccess && hash) {
@@ -175,7 +303,10 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     }, [isSuccess, hash, refetchApplicants, refetchDeliverable, refetchDisputeReason, refetchEscrowState, refetchMission, refetchMyApplication, showSnackbar])
 
     useEffect(() => {
-        if (error) showSnackbar(translateError(error), 'error')
+        if (error) {
+            const translated = translateError(error)
+            showSnackbar(translated, isUserRejection(error) ? 'info' : 'error')
+        }
     }, [error, showSnackbar])
 
     if (isMissionLoading) {
@@ -211,10 +342,43 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
     const escrowStateIndex = state !== undefined ? Number(state) : undefined
     const escrowStateName: EscrowState = escrowStateIndex !== undefined ? ESCROW_STATES[escrowStateIndex] : 'FUNDED'
     const statusLabel = mission.status === 3 && escrowReady ? `FUNDED / ${escrowStateName}` : missionStatus
+    const withdrawnOperatorSet = new Set(withdrawnOperators)
+    const hasWithdrawnMyApplication = connectedAddress
+        ? withdrawnOperatorSet.has(connectedAddress.toLowerCase())
+        : false
+    const hasLockedApplicationStake = Boolean(myApplication?.exists) && !hasWithdrawnMyApplication
+    const activeApplicants = (applicants ?? []).filter((operator) => !withdrawnOperatorSet.has(operator.toLowerCase()))
+    const selectionTimeoutSeconds = Number(selectionTimeoutSec ?? 0n)
+    const fundingTimeoutSeconds = Number(fundingTimeoutSec ?? 0n)
+    const reviewTimeoutSeconds = Number(escrowReviewTimeoutSec ?? 1800n)
+    const selectionTimeoutReadyAt = selectedAtTimestamp !== null && selectionTimeoutSeconds > 0
+        ? selectedAtTimestamp + selectionTimeoutSeconds
+        : null
+    const fundingTimeoutReadyAt = acceptedAtTimestamp !== null && fundingTimeoutSeconds > 0
+        ? acceptedAtTimestamp + fundingTimeoutSeconds
+        : null
+    const selectionTimeoutRemaining = selectionTimeoutReadyAt !== null
+        ? Math.max(0, selectionTimeoutReadyAt - currentTime)
+        : null
+    const fundingTimeoutRemaining = fundingTimeoutReadyAt !== null
+        ? Math.max(0, fundingTimeoutReadyAt - currentTime)
+        : null
+    const canTriggerSelectionTimeout = selectionTimeoutRemaining === 0
+    const canTriggerFundingTimeout = fundingTimeoutRemaining === 0
+    const autoApproveReadyAt = submittedAt && submittedAt > 0n
+        ? Number(submittedAt) + reviewTimeoutSeconds
+        : null
+    const autoApproveRemaining = autoApproveReadyAt !== null
+        ? Math.max(0, autoApproveReadyAt - currentTime)
+        : null
+    const notifyLocalError = (message: string) => {
+        setLocalError(message)
+        showSnackbar(message, 'error')
+    }
 
     const flowStepIndex = (() => {
         if (mission.status === 5) return 0
-        if (mission.status === 0) return (applicants?.length ?? 0) > 0 ? 1 : 0
+        if (mission.status === 0) return activeApplicants.length > 0 ? 1 : 0
         if (mission.status === 1) return 2
         if (mission.status === 2) return 3
         if (mission.status === 3) {
@@ -246,13 +410,18 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'reopenJob', args: [missionId] })
 
     const handleTimeoutReopen = () =>
-        writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'timeoutReopenAndSlashSelected', args: [missionId] })
+        writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'timeoutReopenAndSlashSelected', args: [missionId], gas: 600000n })
 
     const handleTimeoutCancelByOperator = () =>
-        writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'timeoutCancelByOperator', args: [missionId] })
+        writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'timeoutCancelByOperator', args: [missionId], gas: 600000n })
 
-    const handleWithdrawApplicationStake = () =>
+    const handleWithdrawApplicationStake = () => {
+        if (!hasLockedApplicationStake) {
+            showSnackbar('Application stake already withdrawn for this mission.', 'info')
+            return
+        }
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'withdrawApplicationStake', args: [missionId] })
+    }
 
     const handleSubmitWork = (uri: string) =>
         writeContract({ address: mission.escrow as `0x${string}`, abi: ESCROW_ABI, functionName: 'submitWork', args: [uri] })
@@ -262,16 +431,22 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
 
     const handleRaiseDisputeWithProposal = async (reason: string, evidence: string) => {
         try {
-            const isClientCall = connectedAddress?.toLowerCase() === mission?.client.toLowerCase()
-            const expectedWinner = (isClientCall ? mission?.client : mission?.freelancer) as `0x${string}`
-            const description = `DISPUTE-${id}: Resolve dispute for Mission #${id}. Reason: ${reason}`
-            const reasonHash = ('0x' + Buffer.from(description).toString('hex')) as `0x${string}`
-            const calldata = encodeFunctionData({ abi: ESCROW_ABI, functionName: 'resolveDispute', args: [expectedWinner, reasonHash] })
-            await propose(description, mission.escrow as `0x${string}`, calldata)
-            await writeContract({ address: mission.escrow as `0x${string}`, abi: ESCROW_ABI, functionName: 'raiseDispute', args: [reason, evidence] })
-            showSnackbar('Dispute raised and escalated to DAO Governance successfully!', 'success')
+            if (!disputesEnabled) {
+                throw new Error('Disputes are disabled in current MVP mode.')
+            }
+            if (requiredDisputeFee === undefined) {
+                throw new Error('Dispute fee is still loading. Please wait and retry.')
+            }
+            await writeContract({
+                address: mission.escrow as `0x${string}`,
+                abi: ESCROW_ABI,
+                functionName: 'raiseDispute',
+                args: [reason, evidence],
+                value: requiredDisputeFee ?? 0n
+            })
+            showSnackbar('Dispute submitted successfully. Mediator review is now active.', 'success')
         } catch (error: unknown) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to complete dispute process')
+            throw new Error(translateError(error))
         }
     }
 
@@ -367,7 +542,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                                 <OperatorApplicationsPanel
                                     missionId={missionId}
-                                    applicants={applicants ?? []}
+                                    applicants={activeApplicants}
                                     canSelect={!!isClient}
                                     isBusy={isTxBusy}
                                     onSelect={handleSelectOperator}
@@ -386,21 +561,54 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                             // ── Applied states ─────────────────────────────────
                                             mission.status === 0 ? (
                                                 <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex flex-col gap-3">
-                                                    <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
-                                                        <span className="material-symbols-outlined text-base">lock</span>
-                                                        Stake Locked: {formatEther(userRequiredStake ?? 0n)} AVAX
+                                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs">
+                                                        <div className="text-amber-500 font-bold">You already applied to this mission</div>
+                                                        <div className="text-text-muted-light dark:text-text-muted-dark mt-1">
+                                                            One application per operator is allowed in MVP fast mode.
+                                                        </div>
                                                     </div>
-                                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
-                                                        Your stake is locked to prevent spam. It will be refunded if selected and you accept, or you can withdraw it otherwise.
-                                                    </p>
-                                                    <button onClick={handleWithdrawApplicationStake} disabled={isTxBusy} className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2 fluid-touch">
-                                                        Withdraw Application & Stake
-                                                    </button>
+                                                    {hasLockedApplicationStake ? (
+                                                        <>
+                                                            <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
+                                                                <span className="material-symbols-outlined text-base">lock</span>
+                                                                Application stake is currently locked
+                                                            </div>
+                                                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+                                                                Your stake is locked to prevent spam. It will be refunded if selected and you accept, or you can withdraw it otherwise.
+                                                            </p>
+                                                            <button onClick={handleWithdrawApplicationStake} disabled={isTxBusy} className="py-2 px-4 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-sm font-bold disabled:opacity-40 hover:bg-red-500/20 transition-colors mt-2 fluid-touch">
+                                                                Withdraw Application & Stake
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs">
+                                                            <div className="text-emerald-500 font-bold">Application withdrawn</div>
+                                                            <div className="text-text-muted-light dark:text-text-muted-dark mt-1">
+                                                                Stake is already withdrawn. You cannot re-apply to this mission in MVP mode.
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : null
                                         ) : (
                                             // ── Not yet applied ─────────────────────────────────
                                             <div className="space-y-4">
+                                                {normalizedBaseRole === 0 && (
+                                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs">
+                                                        <div className="text-amber-500 font-bold">Base role required</div>
+                                                        <div className="text-text-muted-light dark:text-text-muted-dark mt-1">
+                                                            Set your base role to OPERATOR in profile settings before applying.
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {normalizedBaseRole !== undefined && normalizedBaseRole !== 0 && normalizedBaseRole !== 2 && (
+                                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs">
+                                                        <div className="text-amber-500 font-bold">Role mismatch</div>
+                                                        <div className="text-text-muted-light dark:text-text-muted-dark mt-1">
+                                                            Your base role is not OPERATOR. Only OPERATOR role can apply to missions.
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <textarea
                                                     className="input-glass w-full resize-none text-sm"
                                                     rows={4}
@@ -424,7 +632,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                         const m = Math.floor(remaining / 60), s = remaining % 60
                                                         return (
                                                             <div className="w-full py-4 rounded-xl bg-primary/5 border border-primary/20 text-text-muted-light dark:text-text-muted-dark font-mono text-center text-sm flex items-center justify-center gap-2">
-                                                                <span className="animate-pulse">⏳</span> {isLocked ? 'Application Cooldown' : 'Local Cooldown'}: {m}:{s.toString().padStart(2, '0')}
+                                                                <span className="material-symbols-outlined text-base">hourglass_top</span> Application cooldown active: {m}:{s.toString().padStart(2, '0')}
                                                             </div>
                                                         )
                                                     }
@@ -432,10 +640,14 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                         <button
                                                             onClick={() => {
                                                                 const p = proposalURI.trim()
-                                                                if (!p) { setLocalError('Proposal is required to apply.'); return }
-                                                                handleApply(p, userRequiredStake ?? 0n)
+                                                                if (!p) { notifyLocalError('Proposal is required to apply.'); return }
+                                                                if (normalizedBaseRole === undefined) { notifyLocalError('Role is still loading. Please wait a second and retry.'); return }
+                                                                if (normalizedBaseRole === 0) { notifyLocalError('Set your base role to OPERATOR in profile settings before applying.'); return }
+                                                                if (normalizedBaseRole !== 2) { notifyLocalError('Only OPERATOR role can apply to missions.'); return }
+                                                                if (userRequiredStake === undefined) { notifyLocalError('Still calculating required stake. Please wait.'); return }
+                                                                handleApply(p, userRequiredStake)
                                                             }}
-                                                            disabled={isTxBusy}
+                                                            disabled={isTxBusy || userRequiredStake === undefined || normalizedBaseRole === undefined || normalizedBaseRole === 0 || normalizedBaseRole !== 2}
                                                             className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40 shadow-lg shadow-primary/20 hover:animate-pulse fluid-touch"
                                                         >
                                                             {isTxBusy ? 'Submitting Application...' : 'Submit Application'}
@@ -461,11 +673,43 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                         </button>
                                     </div>
                                 )}
+                                {isClient && mission.status === 1 && !mission.operatorAccepted && (
+                                    <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
+                                        <h2 className="text-xl font-bold">Selected Operator Pending Acceptance</h2>
+                                        <p className="text-sm text-text-muted-light dark:text-text-muted-dark">
+                                            You can reopen immediately, or timeout and slash once the window ends.
+                                        </p>
+                                        {selectionTimeoutRemaining !== null && selectionTimeoutRemaining > 0 && (
+                                            <div className="text-xs rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 p-2">
+                                                Timeout unlocks in {formatDuration(selectionTimeoutRemaining)}.
+                                            </div>
+                                        )}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={handleReopenMission} disabled={isTxBusy} className="w-full py-3 rounded-xl border border-white/20 font-bold disabled:opacity-40">Reopen Now</button>
+                                            <button
+                                                onClick={handleTimeoutReopen}
+                                                disabled={isTxBusy || !canTriggerSelectionTimeout}
+                                                className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold disabled:opacity-40"
+                                            >
+                                                Timeout + Slash
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                                 {isSelectedOperator && mission.operatorAccepted && (
                                     <div className="glass-panel bg-card-light dark:bg-card-dark border border-white/40 dark:border-white/10 rounded-3xl p-6 space-y-3">
                                         <h2 className="text-xl font-bold">Waiting For Client Funding</h2>
                                         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">If client does not fund within timeout, you can cancel and claim their commitment.</p>
-                                        <button onClick={handleTimeoutCancelByOperator} disabled={isTxBusy} className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold disabled:opacity-40">
+                                        {fundingTimeoutRemaining !== null && fundingTimeoutRemaining > 0 && (
+                                            <div className="text-xs rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 p-2">
+                                                Timeout unlocks in {formatDuration(fundingTimeoutRemaining)}.
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handleTimeoutCancelByOperator}
+                                            disabled={isTxBusy || !canTriggerFundingTimeout}
+                                            className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold disabled:opacity-40"
+                                        >
                                             Timeout Cancel + Claim Deposit
                                         </button>
                                     </div>
@@ -479,12 +723,6 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                         <button onClick={() => handleFundEscrow(mission.budget)} disabled={isTxBusy || !mission.operatorAccepted} className="w-full py-3 rounded-xl bg-emerald-500 text-white font-bold disabled:opacity-40 shadow-lg shadow-emerald-500/20 fluid-touch">
                                             {isTxBusy ? 'Funding...' : `Fund ${formatEther(mission.budget)} AVAX Escrow`}
                                         </button>
-                                        {!mission.operatorAccepted && (
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={handleReopenMission} disabled={isTxBusy} className="w-full py-3 rounded-xl border border-white/20 font-bold disabled:opacity-40">Reopen Now</button>
-                                                <button onClick={handleTimeoutReopen} disabled={isTxBusy} className="w-full py-3 rounded-xl border border-red-500/30 text-red-500 font-bold disabled:opacity-40">Timeout + Slash</button>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>
@@ -506,7 +744,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                     onChange={e => { setWorkUrl(e.target.value); setLocalError(null) }}
                                                 />
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => { const c = workUrl.trim(); if (!c) { setLocalError('Deliverable cannot be empty.'); return } handleSubmitWork(c) }} disabled={isTxBusy} className="flex-1 py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40">
+                                                    <button onClick={() => { const c = workUrl.trim(); if (!c) { notifyLocalError('Deliverable cannot be empty.'); return } handleSubmitWork(c) }} disabled={isTxBusy} className="flex-1 py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40">
                                                         {isTxBusy ? 'Submitting...' : 'Confirm Submit'}
                                                     </button>
                                                     <button onClick={() => setShowSubmitInput(false)} className="px-4 py-3 rounded-xl border border-white/20">Cancel</button>
@@ -539,16 +777,27 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                 {isTxBusy ? 'Processing...' : 'Approve & Release Funds'}
                                             </button>
                                             <div className="text-[10px] text-center text-text-muted-light dark:text-text-muted-dark uppercase tracking-widest font-bold">
-                                                Protecting Operators: Auto-approves after 7 days
+                                                Protecting Operators: Auto-approves after review timeout
                                             </div>
                                             {submittedAt && submittedAt > 0n && (
-                                                <button onClick={handleAutoApprove} disabled={isTxBusy || (Date.now() / 1000) < Number(submittedAt) + (7 * 24 * 60 * 60)} className="w-full py-2 rounded-xl border border-emerald-500/20 text-emerald-500 text-xs font-bold disabled:opacity-40">
-                                                    Trigger Auto-Approve (Timeout Policy)
-                                                </button>
+                                                <>
+                                                    {autoApproveRemaining !== null && autoApproveRemaining > 0 && (
+                                                        <div className="text-xs rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-500 p-2 text-center">
+                                                            Auto-approve unlocks in {formatDuration(autoApproveRemaining)}.
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={handleAutoApprove}
+                                                        disabled={isTxBusy || (autoApproveRemaining !== null && autoApproveRemaining > 0)}
+                                                        className="w-full py-2 rounded-xl border border-emerald-500/20 text-emerald-500 text-xs font-bold disabled:opacity-40"
+                                                    >
+                                                        Trigger Auto-Approve (Timeout Policy)
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     )}
-                                    {(isClient || isSelectedOperator) && escrowStateIndex === 1 && (
+                                    {(isClient || isSelectedOperator) && escrowStateIndex === 1 && disputesEnabled && (
                                         <div className="space-y-2">
                                             <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
                                                 If there is an issue with the deliverables, raise a dispute to halt the escrow and escalate to arbitration.
@@ -558,15 +807,33 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                             </button>
                                         </div>
                                     )}
-                                    {escrowStateIndex === 3 && (isClient || isSelectedOperator) && (
+                                    {(isClient || isSelectedOperator) && !disputesEnabled && (
+                                        <div className="space-y-2">
+                                            <div className="rounded-xl border border-white/20 bg-white/5 p-3 text-xs text-text-muted-light dark:text-text-muted-dark">
+                                                Mission-only mode: dispute and governance actions are disabled for this MVP release.
+                                            </div>
+                                        </div>
+                                    )}
+                                    {escrowStateIndex === 3 && (isClient || isSelectedOperator) && disputesEnabled && (
                                         <div className="space-y-3">
                                             <div className="text-xs text-center text-text-muted-light dark:text-text-muted-dark font-bold uppercase tracking-widest">
-                                                Dispute Active — 3 Day Response Window
+                                                Dispute Active - 30 Minute Response Window
                                             </div>
                                             {connectedAddress?.toLowerCase() !== disputeRaiser?.toLowerCase() && !counterEvidenceURI && (
                                                 <div className="space-y-2">
                                                     <input className="input-glass w-full text-sm" placeholder="Counter Evidence Link" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} />
-                                                    <button onClick={() => handleSubmitCounterEvidence(evidenceUrl.trim())} disabled={isTxBusy} className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40">
+                                                    <button
+                                                        onClick={() => {
+                                                            const evidence = evidenceUrl.trim()
+                                                            if (!evidence) {
+                                                                notifyLocalError('Counter evidence link is required.')
+                                                                return
+                                                            }
+                                                            handleSubmitCounterEvidence(evidence)
+                                                        }}
+                                                        disabled={isTxBusy}
+                                                        className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40"
+                                                    >
                                                         Submit Counter Evidence
                                                     </button>
                                                 </div>
@@ -577,8 +844,8 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                         <button onClick={handleRefund} disabled={isTxBusy} className="w-full py-3 rounded-xl border border-white/20 font-bold disabled:opacity-40">
                                             Request Refund
                                         </button>
-                                    )}
-                                    {disputeReason && disputeReason.trim() && (
+                                            )}
+                                    {disputesEnabled && disputeReason && disputeReason.trim() && (
                                         <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 space-y-3">
                                             <div className="font-bold text-red-500">Dispute Investigation</div>
                                             <div className="text-sm"><span className="text-text-muted-light dark:text-text-muted-dark">Reason:</span> {disputeReason}</div>
@@ -598,7 +865,7 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                     <a href={getDeliverableHref(resolutionReasonHash)!} target="_blank" rel="noopener noreferrer" className="text-primary underline">View Audit Report</a>
                                                 </div>
                                             )}
-                                            {!resolutionReasonHash && (isClient || isSelectedOperator) && (
+                                            {!resolutionReasonHash && (isClient || isSelectedOperator) && FEATURES.governance && (
                                                 <div className="pt-2 border-t border-white/10 text-sm space-y-2">
                                                     <div className="font-bold text-amber-500 mb-2">Community Resolution</div>
                                                     <p className="text-xs text-text-muted-light dark:text-text-muted-dark leading-relaxed">
@@ -626,12 +893,19 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                 <div className="max-w-7xl mx-auto w-full"><Footer /></div>
             </section>
 
-            <DisputeModal
-                isOpen={showDisputeModal}
-                onClose={() => setShowDisputeModal(false)}
-                onSubmit={handleRaiseDisputeWithProposal}
-                isSubmitting={isTxBusy}
-            />
+            {disputesEnabled && (
+                <DisputeModal
+                    isOpen={showDisputeModal}
+                    onClose={() => setShowDisputeModal(false)}
+                    onSubmit={handleRaiseDisputeWithProposal}
+                    isSubmitting={isTxBusy}
+                />
+            )}
         </main>
     )
 }
+
+
+
+
+

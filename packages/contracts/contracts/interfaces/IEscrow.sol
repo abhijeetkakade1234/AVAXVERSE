@@ -24,9 +24,12 @@ interface IEscrow {
   event DisputeResolvedSplit(address indexed mediator, string reasonHash, uint256 clientShareBps);
   event Refunded(address indexed client, uint256 amount);
 
+  event DisputeFeeUpdated(uint256 newFee);
+  event BackupMediatorUpdated(address indexed newBackupMediator);
+
   function submitWork(string calldata deliverableURI) external;
   function approveWork() external;
-  function raiseDispute(string calldata reason, string calldata evidenceURI) external;
+  function raiseDispute(string calldata reason, string calldata evidenceURI) external payable;
   function submitCounterEvidence(string calldata evidenceURI) external;
   function resolveDispute(address winner, string calldata reasonHash) external;
   function resolveDisputeSplit(uint256 clientShareBps, string calldata reasonHash) external;
@@ -40,4 +43,10 @@ interface IEscrow {
   function disputeEvidenceURI() external view returns (string memory);
   function counterEvidenceURI() external view returns (string memory);
   function resolutionReasonHash() external view returns (string memory);
+  function disputeRaiser() external view returns (address);
+  function disputeFee() external view returns (uint256);
+  function mediatorBackup() external view returns (address);
+  function hadDispute() external view returns (bool);
+  function finalWinner() external view returns (address);
+  function disputeWasSplitOrTimeout() external view returns (bool);
 }

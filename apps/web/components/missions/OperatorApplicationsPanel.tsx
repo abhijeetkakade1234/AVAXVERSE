@@ -8,7 +8,6 @@ import { CONTRACT_ADDRESSES } from '@/lib/config'
 import { ESCROW_FACTORY_ABI, IDENTITY_REGISTRY_ABI } from '@/lib/abis'
 import { type MissionApplication } from '@/app/missions/types'
 import { shortAddr } from '@/app/missions/utils'
-import { formatEther } from 'viem'
 
 const PAGE_SIZE = 6
 
@@ -52,13 +51,6 @@ const ApplicantRow = React.memo(function ApplicantRow({
         functionName: 'getJobsByUser',
         args: [operator as `0x${string}`],
     }) as { data: bigint[] | undefined }
-
-    const { data: userStake } = useReadContract({
-        address: CONTRACT_ADDRESSES.EscrowFactory,
-        abi: ESCROW_FACTORY_ABI,
-        functionName: 'requiredStakeFor',
-        args: [operator as `0x${string}`],
-    }) as { data: bigint | undefined }
 
     if (application && !application.exists) return null
 
@@ -110,12 +102,6 @@ const ApplicantRow = React.memo(function ApplicantRow({
                     <span className="text-xs text-text-muted-light dark:text-text-muted-dark bg-white/5 border border-white/10 rounded-lg px-2 py-1 shrink-0">
                         {joined}
                     </span>
-                    {/* Stake */}
-                    {userStake !== undefined && (
-                        <span className="text-xs text-primary/80 font-bold bg-primary/5 border border-primary/15 rounded-lg px-2 py-1 shrink-0">
-                            {formatEther(userStake)} AVAX
-                        </span>
-                    )}
                 </div>
 
                 {/* Select */}

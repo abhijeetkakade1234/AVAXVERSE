@@ -10,6 +10,8 @@
     "dev": "bun run --cwd apps/web dev",
     "build": "bun run --cwd apps/web build",
     "test": "bun run --cwd packages/contracts test",
+    "test:smoke": "bun run --cwd packages/contracts test:smoke",
+    "test:rbac-smoke": "bun run --cwd packages/contracts test:rbac-smoke",
     "lint": "bun run --cwd apps/web lint",
     "prepare": "husky || true"
   },
