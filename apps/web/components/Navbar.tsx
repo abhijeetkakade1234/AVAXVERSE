@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Logo from './Logo'
 import { useTheme } from './ThemeProvider'
+import { FEATURES } from '@/lib/config'
 
 export default function Navbar() {
   const { theme, toggle } = useTheme()
@@ -19,10 +20,12 @@ export default function Navbar() {
     { href: '/talent', label: 'Talent' },
     { href: '/missions', label: 'Missions' },
     { href: '/bounties', label: 'Bounties' },
-    { href: '/governance', label: 'Governance' },
     { href: '/profile', label: 'Profile' },
     { href: '/vision', label: 'Vision' },
   ]
+  if (FEATURES.governance) {
+    navLinks.splice(4, 0, { href: '/governance', label: 'Governance' })
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

@@ -21,6 +21,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   uint256 public platformFeeBps; // 250 = 2.5%
   address public feeRecipient;
   address public mediator;
+  address public mediatorBackup;
 
   error Unauthorized();
   error InvalidBudget();
@@ -28,22 +29,19 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   error AlreadyApplied();
   error CooldownActive();
   error InvalidStake();
-  error NotSelected();
   error AlreadyAccepted();
-  error NotFunded();
   error ProfileRequired();
-  error NotMediator();
   error StakeLocked();
   error EscrowNotTracked();
   error AddressMismatch();
   error StateMismatch();
   error FeeTooHigh();
   error InvalidTitle();
+  error InvalidURI();
   error WindowExpired();
   error NoStake();
   error Blocked();
   error WithdrawFailed();
-  error ApplicationNotFound();
   error JobNotFound();
 
   // --- Anti-fraud config ---
@@ -58,7 +56,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   IIdentityRegistry public identityRegistry;
   IReputationToken public reputationToken;
 
-  string private constant ACHIEVEMENT_JOB_COMPLETE = 'ipfs://avaxverse/achievement/job-complete';
+  string private constant ACHIEVEMENT_JOB_COMPLETE = 'ipfs://avaxverse/a/jc';
 
   enum JobStatus {
     OPEN,
@@ -91,10 +89,6 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   mapping(address => uint256) private _escrowToJobIndex;
   mapping(address => uint256[]) private _userJobs;
 
-  event FundsWithdrawn(address indexed user, uint256 amount);
-  event WithdrawalFailed(address indexed user, uint256 amount);
-  event ReputationUpdateFailed(uint256 indexed jobId, address indexed user, string reason);
-
   mapping(uint256 => address[]) private _jobApplicants;
   mapping(uint256 => mapping(address => Application)) private _applications;
 
@@ -108,9 +102,15 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   mapping(address => bool) public blocked;
   mapping(address => uint256) public penaltyPoints;
 
-  // Append new variables at the end
+  // Deprecated: kept for storage layout compatibility.
   mapping(address => uint256) public pendingWithdrawals;
   mapping(address => mapping(uint256 => bool)) private _userHasJob;
+  mapping(address => mapping(address => uint256)) public pairCompletions;
+  uint256 public minWalletAgeSec;
+  uint256 public minDisputeFee;
+  uint256 public escrowReviewTimeoutSec;
+  uint256 public escrowDisputeResponseWindowSec;
+  uint256 public escrowDisputeRecoveryTimeoutSec;
 
   event JobCreated(
     uint256 indexed jobId,
@@ -128,18 +128,8 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   event JobCompleted(uint256 indexed jobId, address indexed escrow);
   event ApplicationStakeWithdrawn(uint256 indexed jobId, address indexed operator, uint256 amount);
   event ClientCommitmentRefunded(uint256 indexed jobId, uint256 amount);
-  event PenaltyApplied(address indexed user, uint256 points, string reason);
   event BlockedStatusUpdated(address indexed user, bool blockedStatus);
-  event AntiFraudConfigUpdated(
-    uint256 clientCommitmentWei,
-    uint256 applicationStakeWei,
-    uint256 applicationCooldownSec,
-    uint256 clientCancelGraceSec,
-    uint256 selectionTimeoutSec,
-    uint256 fundingTimeoutSec,
-    uint256 autoBlockPenaltyThreshold
-  );
-  event ConfigUpdated(uint256 feeBps, address feeRecipient, address mediator);
+  event DisputeFeeConfigUpdated(uint256 oldDisputeFee, uint256 newDisputeFee);
 
   /// @custom:oz-upgrades-unsafe-allow constructor
   constructor() {
@@ -150,22 +140,33 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     address _identityRegistry,
     address _reputationToken,
     address _feeRecipient,
-    address _mediator
+    address _mediator,
+    address _mediatorBackup
   ) public initializer {
+    if (_feeRecipient == address(0)) revert AddressMismatch();
+    if (_mediator == address(0)) revert AddressMismatch();
+    if (_mediatorBackup == address(0)) revert AddressMismatch();
+
     __Ownable_init(msg.sender);
     identityRegistry = IIdentityRegistry(_identityRegistry);
     reputationToken = IReputationToken(_reputationToken);
     feeRecipient = _feeRecipient;
     mediator = _mediator;
+    mediatorBackup = _mediatorBackup;
 
     platformFeeBps = 250;
     clientCommitmentWei = 0.01 ether;
     applicationStakeWei = 0.001 ether;
-    applicationCooldownSec = 10 minutes;
+    applicationCooldownSec = 30 seconds;
     clientCancelGraceSec = 30 minutes;
-    selectionTimeoutSec = 24 hours;
-    fundingTimeoutSec = 24 hours;
+    selectionTimeoutSec = 10 minutes;
+    fundingTimeoutSec = 10 minutes;
     autoBlockPenaltyThreshold = 100;
+    minWalletAgeSec = 0;
+    minDisputeFee = 0.005 ether;
+    escrowReviewTimeoutSec = 30 minutes;
+    escrowDisputeResponseWindowSec = 30 minutes;
+    escrowDisputeRecoveryTimeoutSec = 14 days;
   }
 
   /**
@@ -188,6 +189,11 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     string calldata metadataURI
   ) external payable notBlocked(msg.sender) nonReentrant {
     if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
+    if (identityRegistry.getBaseRole(msg.sender) != 1) {
+      revert Unauthorized();
+    }
+    IIdentityRegistry.Profile memory profile = identityRegistry.getProfile(msg.sender);
+    if (block.timestamp - profile.registeredAt < minWalletAgeSec) revert Unauthorized();
     if (bytes(title).length == 0) revert InvalidTitle();
     if (budget == 0) revert InvalidBudget();
     if (msg.value != clientCommitmentWei) revert InvalidStake();
@@ -221,8 +227,11 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     if (job.status != JobStatus.OPEN) revert JobNotOpen();
     if (msg.sender == job.client) revert Unauthorized();
     if (!identityRegistry.hasProfile(msg.sender)) revert ProfileRequired();
+    if (identityRegistry.getBaseRole(msg.sender) != 2) {
+      revert Unauthorized();
+    }
     if (_applications[jobId][msg.sender].exists) revert AlreadyApplied();
-    if (bytes(proposalURI).length == 0) revert('URI required');
+    if (bytes(proposalURI).length == 0) revert InvalidURI();
 
     uint256 requiredStake = requiredStakeFor(msg.sender);
     if (msg.value != requiredStake) revert InvalidStake();
@@ -248,7 +257,8 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     if (msg.sender != job.client) revert Unauthorized();
     if (job.status != JobStatus.OPEN) revert JobNotOpen();
     if (blocked[operator]) revert Unauthorized();
-    if (!_applications[jobId][operator].exists) revert ApplicationNotFound();
+    if (!_applications[jobId][operator].exists) revert Unauthorized();
+    if (_applicationStakeByJob[jobId][operator] == 0) revert NoStake();
 
     job.freelancer = operator;
     job.status = JobStatus.SELECTED;
@@ -288,9 +298,14 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
       job.client,
       job.freelancer,
       mediator,
+      mediatorBackup,
       address(this),
       platformFeeBps,
-      feeRecipient
+      feeRecipient,
+      minDisputeFee,
+      escrowReviewTimeoutSec,
+      escrowDisputeResponseWindowSec,
+      escrowDisputeRecoveryTimeoutSec
     );
 
     escrowAddr = address(escrow);
@@ -319,7 +334,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
         emit ClientCommitmentRefunded(jobId, commitment);
       } else {
         _safeTransfer(feeRecipient, commitment);
-        _addPenalty(job.client, 10, 'Late cancellation');
+        _addPenalty(job.client, 10, 1);
       }
     }
 
@@ -343,7 +358,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   /// @notice Slash selected operator stake if they do not accept in time, then reopen.
   function timeoutReopenAndSlashSelected(
     uint256 jobId
-  ) external nonReentrant notBlocked(msg.sender) {
+  ) external notBlocked(msg.sender) nonReentrant {
     Job storage job = _jobs[jobId];
     if (msg.sender != job.client) revert Unauthorized();
     if (job.status != JobStatus.SELECTED) revert StateMismatch();
@@ -359,7 +374,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
       emit ApplicationStakeWithdrawn(jobId, prevOperator, stake);
     }
 
-    _addPenalty(prevOperator, 25, 'Did not accept assignment');
+    _addPenalty(prevOperator, 25, 2);
 
     job.freelancer = address(0);
     job.status = JobStatus.OPEN;
@@ -369,7 +384,7 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
   }
 
   /// @notice If client does not fund in time after acceptance, operator can cancel and claim commitment.
-  function timeoutCancelByOperator(uint256 jobId) external nonReentrant notBlocked(msg.sender) {
+  function timeoutCancelByOperator(uint256 jobId) external notBlocked(msg.sender) nonReentrant {
     Job storage job = _jobs[jobId];
     if (job.status != JobStatus.ACCEPTED) revert StateMismatch();
     if (!job.operatorAccepted) revert StateMismatch();
@@ -383,12 +398,12 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
       _safeTransfer(job.freelancer, commitment);
     }
 
-    _addPenalty(job.client, 25, 'Did not fund escrow after operator acceptance');
+    _addPenalty(job.client, 25, 3);
     job.status = JobStatus.CANCELLED;
     emit JobCancelled(jobId);
   }
 
-  function withdrawApplicationStake(uint256 jobId) external nonReentrant notBlocked(msg.sender) {
+  function withdrawApplicationStake(uint256 jobId) external notBlocked(msg.sender) nonReentrant {
     Job storage job = _jobs[jobId];
     uint256 amount = _applicationStakeByJob[jobId][msg.sender];
     if (amount == 0) revert NoStake();
@@ -405,7 +420,6 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     if (!canWithdraw) revert StakeLocked();
 
     _applicationStakeByJob[jobId][msg.sender] = 0;
-    _applications[jobId][msg.sender].exists = false; // Fix: Mark application as removed
     _safeTransfer(msg.sender, amount);
     emit ApplicationStakeWithdrawn(jobId, msg.sender, amount);
   }
@@ -428,64 +442,32 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     if (job.status != JobStatus.FUNDED) revert StateMismatch();
     if (IEscrow(payable(escrowAddr)).getState() != IEscrow.State.RELEASED) revert StateMismatch();
 
+    pairCompletions[job.client][job.freelancer] += 1;
+    uint256 pairs = pairCompletions[job.client][job.freelancer];
+    uint256 repGain = 25;
+    if (pairs == 2) repGain = 12;
+    if (pairs == 3) repGain = 6;
+    if (pairs >= 4) repGain = 0;
+
     job.status = JobStatus.CLOSED;
-    try reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE) {} catch {
-      emit ReputationUpdateFailed(jobId, job.freelancer, 'Mint fail');
-    }
-    try identityRegistry.incrementReputation(job.freelancer, 25) {} catch {
-      emit ReputationUpdateFailed(jobId, job.freelancer, 'Rep fail');
+    try reputationToken.mintAchievement(job.freelancer, ACHIEVEMENT_JOB_COMPLETE) {} catch {}
+    if (repGain > 0) {
+      try identityRegistry.incrementReputation(job.freelancer, repGain) {} catch {}
     }
     emit JobCompleted(jobId, escrowAddr);
   }
 
   function setConfig(uint256 feeBps, address _feeRecipient, address _mediator) external onlyOwner {
     if (feeBps > 1000) revert FeeTooHigh();
+    if (_feeRecipient == address(0) || _mediator == address(0)) revert AddressMismatch();
     platformFeeBps = feeBps;
     feeRecipient = _feeRecipient;
     mediator = _mediator;
-    emit ConfigUpdated(feeBps, _feeRecipient, _mediator);
   }
 
-  /**
-   * @notice Allows users to withdraw any funds that failed to transfer automatically.
-   */
-  function withdraw() external nonReentrant {
-    uint256 amount = pendingWithdrawals[msg.sender];
-    if (amount == 0) revert NoStake();
-
-    pendingWithdrawals[msg.sender] = 0;
-    (bool ok, ) = msg.sender.call{value: amount}('');
-    if (!ok) revert WithdrawFailed();
-
-    emit FundsWithdrawn(msg.sender, amount);
-  }
-
-  function setAntiFraudConfig(
-    uint256 _clientCommitmentWei,
-    uint256 _applicationStakeWei,
-    uint256 _applicationCooldownSec,
-    uint256 _clientCancelGraceSec,
-    uint256 _selectionTimeoutSec,
-    uint256 _fundingTimeoutSec,
-    uint256 _autoBlockPenaltyThreshold
-  ) external onlyOwner {
-    clientCommitmentWei = _clientCommitmentWei;
-    applicationStakeWei = _applicationStakeWei;
-    applicationCooldownSec = _applicationCooldownSec;
-    clientCancelGraceSec = _clientCancelGraceSec;
-    selectionTimeoutSec = _selectionTimeoutSec;
-    fundingTimeoutSec = _fundingTimeoutSec;
-    autoBlockPenaltyThreshold = _autoBlockPenaltyThreshold;
-
-    emit AntiFraudConfigUpdated(
-      _clientCommitmentWei,
-      _applicationStakeWei,
-      _applicationCooldownSec,
-      _clientCancelGraceSec,
-      _selectionTimeoutSec,
-      _fundingTimeoutSec,
-      _autoBlockPenaltyThreshold
-    );
+  function setMediatorBackup(address _mediatorBackup) external onlyOwner {
+    if (_mediatorBackup == address(0)) revert AddressMismatch();
+    mediatorBackup = _mediatorBackup;
   }
 
   function setBlocked(address user, bool isBlocked) external onlyOwner {
@@ -493,8 +475,35 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     emit BlockedStatusUpdated(user, isBlocked);
   }
 
-  function clearPenalty(address user) external onlyOwner {
-    penaltyPoints[user] = 0;
+  function setWalletAgeConfig(uint256 _minWalletAgeSec) external onlyOwner {
+    minWalletAgeSec = _minWalletAgeSec;
+  }
+
+  function setDisputeFeeConfig(uint256 _minDisputeFee) external onlyOwner {
+    uint256 oldFee = minDisputeFee;
+    minDisputeFee = _minDisputeFee;
+    emit DisputeFeeConfigUpdated(oldFee, _minDisputeFee);
+  }
+
+  function setTimingConfig(
+    uint256 _applicationCooldownSec,
+    uint256 _selectionTimeoutSec,
+    uint256 _fundingTimeoutSec,
+    uint256 _escrowReviewTimeoutSec,
+    uint256 _escrowDisputeResponseWindowSec,
+    uint256 _escrowDisputeRecoveryTimeoutSec
+  ) external onlyOwner {
+    applicationCooldownSec = _applicationCooldownSec;
+    selectionTimeoutSec = _selectionTimeoutSec;
+    fundingTimeoutSec = _fundingTimeoutSec;
+    escrowReviewTimeoutSec = _escrowReviewTimeoutSec;
+    escrowDisputeResponseWindowSec = _escrowDisputeResponseWindowSec;
+    escrowDisputeRecoveryTimeoutSec = _escrowDisputeRecoveryTimeoutSec;
+  }
+
+  function getDisputeFee(address user) external view returns (uint256) {
+    user;
+    return minDisputeFee;
   }
 
   function getJob(uint256 jobId) external view returns (Job memory) {
@@ -520,20 +529,6 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     return _applications[jobId][operator];
   }
 
-  function getSelectedTimestamps(
-    uint256 jobId
-  ) external view returns (uint256 selectedAt, uint256 acceptedAt) {
-    return (_selectedAt[jobId], _acceptedAt[jobId]);
-  }
-
-  function getClientCommitment(uint256 jobId) external view returns (uint256) {
-    return _clientCommitmentByJob[jobId];
-  }
-
-  function getApplicationStake(uint256 jobId, address operator) external view returns (uint256) {
-    return _applicationStakeByJob[jobId][operator];
-  }
-
   function _refundClientCommitment(uint256 jobId, address client) internal {
     uint256 commitment = _clientCommitmentByJob[jobId];
     if (commitment > 0) {
@@ -552,9 +547,9 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     }
   }
 
-  function _addPenalty(address user, uint256 points, string memory reason) internal {
+  function _addPenalty(address user, uint256 points, uint8 reasonCode) internal {
     penaltyPoints[user] += points;
-    emit PenaltyApplied(user, points, reason);
+    reasonCode;
 
     if (
       autoBlockPenaltyThreshold > 0 &&
@@ -571,7 +566,6 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
     (bool ok, ) = to.call{value: amount}('');
     if (!ok) {
       pendingWithdrawals[to] += amount;
-      emit WithdrawalFailed(to, amount);
     }
   }
 
@@ -580,6 +574,15 @@ contract EscrowFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable, Re
       _userHasJob[user][jobId] = true;
       _userJobs[user].push(jobId);
     }
+  }
+
+  function withdraw() external nonReentrant {
+    uint256 amount = pendingWithdrawals[msg.sender];
+    if (amount == 0) revert NoStake();
+
+    pendingWithdrawals[msg.sender] = 0;
+    (bool ok, ) = msg.sender.call{value: amount}('');
+    if (!ok) revert WithdrawFailed();
   }
 
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

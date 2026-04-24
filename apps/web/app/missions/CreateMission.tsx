@@ -6,14 +6,17 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { formatEther, parseEther } from 'viem'
 import Link from 'next/link'
 import { useSnackbar } from '@/context/SnackbarContext'
-import { translateError } from '@/lib/error-translator'
+import { isUserRejection, translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
-import { ESCROW_FACTORY_ABI } from '@/lib/abis'
+import { ESCROW_FACTORY_ABI, IDENTITY_REGISTRY_ABI } from '@/lib/abis'
+import { useAccount } from 'wagmi'
 
 const VALIDATOR_NETWORKS = ['Avalanche DAO Mainnet', 'Fuji Testnet', 'Private Subnet']
+const MAX_METADATA_URI_LENGTH = 1200
 
 export default function CreateMission() {
     const { showSnackbar } = useSnackbar()
+    const { address } = useAccount()
     const { writeContract, data: hash, isPending, error } = useWriteContract()
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
     const { data: clientCommitmentWei } = useReadContract({
@@ -21,9 +24,47 @@ export default function CreateMission() {
         abi: ESCROW_FACTORY_ABI,
         functionName: 'clientCommitmentWei',
     }) as { data: bigint | undefined }
+    const { data: hasProfile } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'hasProfile',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    }) as { data: boolean | undefined }
+    const { data: minWalletAgeSec } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'minWalletAgeSec',
+    }) as { data: bigint | undefined }
+    const { data: isBlocked } = useReadContract({
+        address: CONTRACT_ADDRESSES.EscrowFactory,
+        abi: ESCROW_FACTORY_ABI,
+        functionName: 'blocked',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    }) as { data: boolean | undefined }
+    const { data: profile } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'getProfile',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address && hasProfile === true },
+    }) as { data: { registeredAt: bigint } | undefined }
+    const { data: baseRole } = useReadContract({
+        address: CONTRACT_ADDRESSES.IdentityRegistry,
+        abi: IDENTITY_REGISTRY_ABI,
+        functionName: 'getBaseRole',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address && hasProfile === true },
+    }) as { data: bigint | number | undefined }
+    const normalizedBaseRole = typeof baseRole === 'bigint'
+        ? baseRole
+        : typeof baseRole === 'number'
+            ? BigInt(baseRole)
+            : undefined
     const tagInputRef = useRef<HTMLInputElement>(null)
 
-    const [fieldErrors, setFieldErrors] = useState<{ title?: string; budget?: string }>({})
+    const [fieldErrors, setFieldErrors] = useState<{ title?: string; budget?: string; metadata?: string }>({})
 
     const [form, setForm] = useState({
         title: '',
@@ -49,10 +90,14 @@ export default function CreateMission() {
     }
 
     const handleSubmit = () => {
-        const errors: { title?: string; budget?: string } = {}
+        const errors: { title?: string; budget?: string; metadata?: string } = {}
         const trimmedTitle = form.title.trim()
 
         if (!trimmedTitle) errors.title = 'Mission title is required.'
+        const trimmedMetadata = form.desc.trim()
+        if (trimmedMetadata.length > MAX_METADATA_URI_LENGTH) {
+            errors.metadata = `Mission description is too long. Keep it under ${MAX_METADATA_URI_LENGTH} characters.`
+        }
 
         let parsedBudget: bigint | null = null
         if (!form.budget.trim()) {
@@ -68,6 +113,42 @@ export default function CreateMission() {
 
         setFieldErrors(errors)
         if (Object.keys(errors).length > 0 || parsedBudget === null) {
+            const firstError = errors.title ?? errors.budget ?? errors.metadata
+            if (firstError) showSnackbar(firstError, 'error')
+            return
+        }
+        if (!address) {
+            showSnackbar('Connect your wallet first to post a mission.', 'warning')
+            return
+        }
+        if (isBlocked) {
+            showSnackbar('This wallet is temporarily blocked from creating missions.', 'error')
+            return
+        }
+        if (hasProfile === false) {
+            showSnackbar('Create your profile first, then post a mission.', 'warning')
+            return
+        }
+        if (hasProfile === true && normalizedBaseRole === 0n) {
+            showSnackbar('Set your base role to CLIENT in profile settings before posting missions.', 'warning')
+            return
+        }
+        if (hasProfile === true && normalizedBaseRole !== undefined && normalizedBaseRole !== 1n) {
+            const currentRole = normalizedBaseRole === 2n ? 'OPERATOR' : 'NOT SET'
+            showSnackbar(`Only CLIENT role can post missions. Your current base role is ${currentRole}.`, 'warning')
+            return
+        }
+        if (hasProfile === true && profile && minWalletAgeSec !== undefined) {
+            const nowSec = Math.floor(Date.now() / 1000)
+            const eligibleAt = Number(profile.registeredAt + minWalletAgeSec)
+            if (nowSec < eligibleAt) {
+                const remainingDays = Math.ceil((eligibleAt - nowSec) / (24 * 60 * 60))
+                showSnackbar(`Account is too new. Try again in about ${remainingDays} day(s).`, 'warning')
+                return
+            }
+        }
+        if (clientCommitmentWei === undefined) {
+            showSnackbar('Network config is still loading. Please wait a moment and retry.', 'warning')
             return
         }
 
@@ -75,7 +156,7 @@ export default function CreateMission() {
             address: CONTRACT_ADDRESSES.EscrowFactory,
             abi: ESCROW_FACTORY_ABI,
             functionName: 'createJob',
-            args: [trimmedTitle, parsedBudget, form.desc.trim()],
+            args: [trimmedTitle, parsedBudget, trimmedMetadata],
             value: clientCommitmentWei ?? BigInt(0),
         })
     }
@@ -90,7 +171,8 @@ export default function CreateMission() {
 
     React.useEffect(() => {
         if (error) {
-            showSnackbar(translateError(error), 'error')
+            const translated = translateError(error)
+            showSnackbar(translated, isUserRejection(error) ? 'info' : 'error')
         }
     }, [error, showSnackbar])
 
@@ -144,8 +226,15 @@ export default function CreateMission() {
                                 placeholder="Describe scope, acceptance criteria, links, or metadata URI..."
                                 rows={5}
                                 value={form.desc}
-                                onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
+                                onChange={e => {
+                                    setForm(f => ({ ...f, desc: e.target.value }))
+                                    setFieldErrors(prev => ({ ...prev, metadata: undefined }))
+                                }}
                             />
+                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark ml-1">
+                                {form.desc.trim().length}/{MAX_METADATA_URI_LENGTH} characters
+                            </p>
+                            {fieldErrors.metadata && <p className="text-xs text-red-400 font-bold ml-1">{fieldErrors.metadata}</p>}
                         </div>
                     </div>
                 </div>

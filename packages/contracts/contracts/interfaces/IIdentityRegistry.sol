@@ -6,6 +6,12 @@ pragma solidity ^0.8.24;
  * @notice Interface for on-chain DID registration and profile management.
  */
 interface IIdentityRegistry {
+  enum BaseRole {
+    NONE,
+    CLIENT,
+    OPERATOR
+  }
+
   struct Profile {
     string did;
     string name;
@@ -15,13 +21,30 @@ interface IIdentityRegistry {
     uint256 reputationScore;
     uint256 registeredAt;
     bool exists;
+    uint256 crossChainScore;
+    bool sybilVerified;
+    uint256 diversityScore;
+    uint256 totalUniqueClients;
+    uint256 totalUniqueOperators;
   }
 
   event ProfileRegistered(address indexed user, string did, uint256 timestamp);
   event ProfileUpdated(address indexed user, string name, string pfp, string metadataURI);
   event ReputationUpdated(address indexed user, uint256 newScore);
+  event VerificationLevelUpdated(address indexed user, uint256 level);
+  event ProfileSignalsUpdated(
+    address indexed user,
+    uint256 crossChainScore,
+    bool sybilVerified,
+    uint256 diversityScore,
+    uint256 totalUniqueClients,
+    uint256 totalUniqueOperators
+  );
   event NameReserved(address indexed user, string name);
   event NameReleased(string name);
+  event BaseRoleInitialized(address indexed user, uint8 indexed role);
+  event DisputeHandlerUpdated(address indexed user, bool enabled);
+  event AdminRoleUpdated(address indexed user, bool enabled);
 
   error NameAlreadyTaken(string name);
 
@@ -30,6 +53,12 @@ interface IIdentityRegistry {
     string calldata pfp,
     string calldata metadataURI
   ) external;
+  function registerWithRole(
+    string calldata name,
+    string calldata pfp,
+    string calldata metadataURI,
+    uint8 role
+  ) external;
   function updateProfile(
     string calldata name,
     string calldata pfp,
@@ -37,7 +66,22 @@ interface IIdentityRegistry {
   ) external;
   function updateMetadata(string calldata metadataURI) external;
   function incrementReputation(address user, uint256 amount) external;
+  function setVerificationLevel(address user, uint256 level) external;
+  function updateProfileSignals(
+    address user,
+    uint256 crossChainScore,
+    bool sybilVerified,
+    uint256 diversityScore,
+    uint256 totalUniqueClients,
+    uint256 totalUniqueOperators
+  ) external;
   function getProfile(address user) external view returns (Profile memory);
   function hasProfile(address user) external view returns (bool);
   function isNameAvailable(string calldata name) external view returns (bool);
+  function setInitialBaseRole(uint8 role) external;
+  function getBaseRole(address user) external view returns (uint8);
+  function isDisputeHandler(address user) external view returns (bool);
+  function isAdmin(address user) external view returns (bool);
+  function setDisputeHandler(address user, bool enabled) external;
+  function setAdminRole(address user, bool enabled) external;
 }

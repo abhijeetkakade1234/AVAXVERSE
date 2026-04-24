@@ -14,9 +14,13 @@ function parseAddress(name: string, fallback?: string, required = false): string
 }
 
 /**
- * Full deployment script with optional governance + timelock ownership handoff.
+ * Mission-only deployment:
+ * - deploys IdentityRegistry, ReputationToken, AVAXToken, EscrowFactory
+ * - skips AVAXGovernor deployment
+ * - uses explicit mediator addresses from env (or deployer fallback)
+ *
  * Usage:
- *   npx hardhat run scripts/deploy.ts --network fuji
+ *   npx hardhat run scripts/deploy_mission_only.ts --network fuji
  */
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -31,19 +35,21 @@ async function main() {
   const timelockDelaySec = Number(process.env.TIMELOCK_DELAY_SEC || '0')
   const timelockAdmin = parseAddress('TIMELOCK_ADMIN_ADDRESS', deployerAddress)
 
-  console.log('\nDeploying AVAXVERSE contracts with UUPS proxies...')
+  console.log('\nDeploying AVAXVERSE mission-only contracts with UUPS proxies...')
   console.log(`  Network  : ${network.name}`)
   console.log(`  Deployer : ${deployerAddress}`)
   console.log(`  Mediator : ${mediatorAddress}`)
   console.log(`  Backup   : ${mediatorBackupAddress}`)
   console.log(`  Timelock : ${timelockDelaySec > 0 ? `${timelockDelaySec}s` : 'disabled'}`)
-  console.log(`  Balance  : ${ethers.formatEther(await ethers.provider.getBalance(deployerAddress))} AVAX\n`)
+  console.log(
+    `  Balance  : ${ethers.formatEther(await ethers.provider.getBalance(deployerAddress))} AVAX\n`
+  )
 
   if (mediatorAddress.toLowerCase() === mediatorBackupAddress.toLowerCase()) {
     if (!isLocalNetwork) {
       throw new Error('MEDIATOR_ADDRESS and MEDIATOR_BACKUP_ADDRESS cannot be the same on non-local network')
     }
-    console.log('Warning: mediator and backup are the same address (allowed only for local testing).')
+    console.log('Warning: mediator and backup are the same address (allowed only for local MVP testing).')
   }
 
   // 1) IdentityRegistry
@@ -67,20 +73,14 @@ async function main() {
   await avaxToken.waitForDeployment()
   console.log(`OK AVAXToken Proxy: ${await avaxToken.getAddress()}`)
 
-  // 4) AVAXGovernor
-  const AVAXGovernor = await ethers.getContractFactory('AVAXGovernor')
-  const governor = await AVAXGovernor.deploy(await avaxToken.getAddress())
-  await governor.waitForDeployment()
-  console.log(`OK AVAXGovernor: ${await governor.getAddress()}`)
-
-  // 5) EscrowFactory
+  // 4) EscrowFactory
   const EscrowFactory = await ethers.getContractFactory('EscrowFactory')
   const factory = await upgrades.deployProxy(
     EscrowFactory,
     [
       await registry.getAddress(),
       await repToken.getAddress(),
-      deployerAddress,
+      deployerAddress, // feeRecipient
       mediatorAddress,
       mediatorBackupAddress,
     ],
@@ -89,7 +89,7 @@ async function main() {
   await factory.waitForDeployment()
   console.log(`OK EscrowFactory Proxy: ${await factory.getAddress()}`)
 
-  // 6) Wire permissions
+  // 5) Wiring
   await repToken.setMinter(await factory.getAddress(), true)
   await registry.setAuthorizedUpdater(await factory.getAddress(), true)
   await registry.setAVAXToken(await avaxToken.getAddress())
@@ -107,22 +107,23 @@ async function main() {
     )
     await timelock.waitForDeployment()
     timelockAddress = await timelock.getAddress()
-    console.log(`OK AVAXTimelock: ${timelockAddress}`)
+    console.log(`OK Timelock deployed: ${timelockAddress}`)
 
     await registry.transferOwnership(timelockAddress)
     await factory.transferOwnership(timelockAddress)
-    console.log('OK Ownership moved to timelock for IdentityRegistry and EscrowFactory.')
+    console.log('OK Ownership transferred to timelock for IdentityRegistry and EscrowFactory.')
   }
 
-  // 7) Save deployments
+  // 6) Save deployments
   const addresses = {
     network: network.name,
     chainId: (await ethers.provider.getNetwork()).chainId.toString(),
+    mode: 'mission-only',
     IdentityRegistry: await registry.getAddress(),
     ReputationToken: await repToken.getAddress(),
     EscrowFactory: await factory.getAddress(),
     AVAXToken: await avaxToken.getAddress(),
-    AVAXGovernor: await governor.getAddress(),
+    AVAXGovernor: ethers.ZeroAddress,
     TimelockController: timelockAddress,
     mediator: mediatorAddress,
     mediatorBackup: mediatorBackupAddress,
@@ -140,4 +141,3 @@ main().catch((err) => {
   console.error(err)
   process.exitCode = 1
 })
-

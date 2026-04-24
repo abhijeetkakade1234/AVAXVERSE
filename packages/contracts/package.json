@@ -5,6 +5,8 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
+    "test:smoke": "hardhat test test/AVAXVERSE.test.ts --grep \"EscrowFactory -> Escrow\"",
+    "test:rbac-smoke": "hardhat test test/AVAXVERSE.test.ts --grep \"mission role gating\"",
     "deploy:fuji": "hardhat run scripts/deploy.ts --network fuji",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "upgrade:fuji": "hardhat run scripts/upgrade.ts --network fuji",

@@ -41,6 +41,11 @@ export const ACTIVE_CHAIN =
   NETWORK_NAME === 'testnet' ? avalancheFuji :
   localHardhat
 
+export const FEATURES = {
+  governance: process.env.NEXT_PUBLIC_ENABLE_GOVERNANCE === 'true',
+  disputes: process.env.NEXT_PUBLIC_ENABLE_DISPUTES === 'true',
+} as const
+
 /** AVAXVERSE deployed contract addresses */
 export const CONTRACT_ADDRESSES = {
   IdentityRegistry: (process.env.NEXT_PUBLIC_IDENTITY_REGISTRY ??

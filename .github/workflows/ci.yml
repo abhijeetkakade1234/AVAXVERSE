@@ -28,6 +28,12 @@ jobs:
       - name: Compile contracts
         run: bun run compile
 
+      - name: Run mission smoke tests
+        run: bun run test:smoke
+
+      - name: Run RBAC smoke test
+        run: bun run test:rbac-smoke
+
       - name: Run tests
         run: bun run test
 

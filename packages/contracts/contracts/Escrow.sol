@@ -4,6 +4,10 @@ pragma solidity ^0.8.24;
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import './interfaces/IEscrow.sol';
 
+interface IEscrowFactoryDisputes {
+  function getDisputeFee(address user) external view returns (uint256);
+}
+
 /**
  * @title Escrow
  * @notice Holds payment for a single freelance job. State machine:
@@ -18,6 +22,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
   address public immutable client;
   address public immutable freelancer;
   address public immutable mediator;
+  address public immutable mediatorBackup;
   address public immutable factory;
   uint256 public immutable platformFeeBps; // basis points (e.g., 250 = 2.5%)
   address public immutable feeRecipient;
@@ -25,13 +30,14 @@ contract Escrow is IEscrow, ReentrancyGuard {
   // --- Mutable State ---
   State private _state;
   string public deliverableURI;
+  bytes32 private _lastSubmissionHash;
   address public disputeRaiser;
   uint256 public disputedAt;
   string public disputeReason;
   uint256 public _submittedAt;
-  uint256 public constant REVIEW_TIMEOUT = 7 days;
-  uint256 public constant DISPUTE_RESPONSE_WINDOW = 3 days;
-  uint256 public constant DISPUTE_RECOVERY_TIMEOUT = 14 days;
+  uint256 public reviewTimeoutSec;
+  uint256 public disputeResponseWindowSec;
+  uint256 public disputeRecoveryTimeoutSec;
 
   mapping(address => uint256) public pendingWithdrawals;
 
@@ -46,6 +52,11 @@ contract Escrow is IEscrow, ReentrancyGuard {
   string public _disputeEvidenceURI;
   string public _counterEvidenceURI;
   string public _resolutionReasonHash;
+  uint256 public disputeFee;
+  bool public hadDispute;
+  bool public counterEvidenceSubmitted;
+  address public finalWinner;
+  bool public disputeWasSplitOrTimeout;
 
   // --- Errors ---
   error Unauthorized();
@@ -56,9 +67,14 @@ contract Escrow is IEscrow, ReentrancyGuard {
     address _client,
     address _freelancer,
     address _mediator,
+    address _mediatorBackup,
     address _factory,
     uint256 _feeBps,
-    address _feeRecipient
+    address _feeRecipient,
+    uint256 _disputeFee,
+    uint256 _reviewTimeoutSec,
+    uint256 _disputeResponseWindowSec,
+    uint256 _disputeRecoveryTimeoutSec
   ) payable {
     require(msg.value > 0, 'Escrow: must fund on creation');
     require(_client != _freelancer, 'Escrow: client != freelancer');
@@ -66,9 +82,14 @@ contract Escrow is IEscrow, ReentrancyGuard {
     client = _client;
     freelancer = _freelancer;
     mediator = _mediator;
+    mediatorBackup = _mediatorBackup;
     factory = _factory;
     platformFeeBps = _feeBps;
     feeRecipient = _feeRecipient;
+    disputeFee = _disputeFee;
+    reviewTimeoutSec = _reviewTimeoutSec;
+    disputeResponseWindowSec = _disputeResponseWindowSec;
+    disputeRecoveryTimeoutSec = _disputeRecoveryTimeoutSec;
     _state = State.FUNDED;
   }
 
@@ -78,8 +99,12 @@ contract Escrow is IEscrow, ReentrancyGuard {
   function submitWork(string calldata uri) external override {
     if (msg.sender != freelancer) revert Unauthorized();
     _requireState(State.FUNDED);
+    require(bytes(uri).length > 10, 'Escrow: uri too short');
+    bytes32 uriHash = keccak256(bytes(uri));
+    require(uriHash != _lastSubmissionHash, 'Escrow: duplicate submission');
 
     deliverableURI = uri;
+    _lastSubmissionHash = uriHash;
     _submittedAt = block.timestamp;
     _state = State.SUBMITTED;
     emit WorkSubmitted(freelancer, uri);
@@ -97,17 +122,36 @@ contract Escrow is IEscrow, ReentrancyGuard {
   }
 
   /// @notice Client or freelancer can raise a dispute after submission.
-  function raiseDispute(string calldata reason, string calldata evidenceURI) external override {
+  function raiseDispute(
+    string calldata reason,
+    string calldata evidenceURI
+  ) external payable override {
     if (msg.sender != client && msg.sender != freelancer) revert Unauthorized();
     _requireState(State.SUBMITTED);
     require(bytes(reason).length > 0, 'Escrow: dispute reason required');
+    uint256 requiredFee = disputeFee;
+    if (factory != address(0)) {
+      try IEscrowFactoryDisputes(factory).getDisputeFee(msg.sender) returns (uint256 dynamicFee) {
+        requiredFee = dynamicFee;
+      } catch {}
+    }
+    require(msg.value >= requiredFee, 'Escrow: dispute fee too low');
 
     disputeRaiser = msg.sender;
     disputedAt = block.timestamp;
     disputeReason = reason;
     _disputeEvidenceURI = evidenceURI;
+    hadDispute = true;
     _state = State.DISPUTED;
     emit DisputeRaised(msg.sender, reason, evidenceURI);
+
+    if (requiredFee > 0 && feeRecipient != address(0)) {
+      _safeTransfer(feeRecipient, requiredFee);
+    }
+    uint256 overpayment = msg.value - requiredFee;
+    if (overpayment > 0) {
+      _safeTransfer(msg.sender, overpayment);
+    }
   }
 
   /// @notice The other party can submit their evidence during the window.
@@ -115,8 +159,10 @@ contract Escrow is IEscrow, ReentrancyGuard {
     if (msg.sender != client && msg.sender != freelancer) revert Unauthorized();
     _requireState(State.DISPUTED);
     require(msg.sender != disputeRaiser, 'Escrow: raiser cannot counter-evidence');
+    require(!counterEvidenceSubmitted, 'Escrow: counter evidence already submitted');
 
     _counterEvidenceURI = evidenceURI;
+    counterEvidenceSubmitted = true;
     emit CounterEvidenceSubmitted(msg.sender, evidenceURI);
   }
 
@@ -125,16 +171,17 @@ contract Escrow is IEscrow, ReentrancyGuard {
     address winner,
     string calldata reasonHash
   ) external override nonReentrant {
-    if (msg.sender != mediator) revert Unauthorized();
+    if (msg.sender != mediator && msg.sender != mediatorBackup) revert Unauthorized();
     _requireState(State.DISPUTED);
     require(winner == client || winner == freelancer, 'Escrow: invalid winner');
     require(
-      block.timestamp > disputedAt + DISPUTE_RESPONSE_WINDOW,
+      block.timestamp > disputedAt + disputeResponseWindowSec,
       'Escrow: response window active'
     );
 
     _resolutionReasonHash = reasonHash;
-    emit DisputeResolved(mediator, winner, reasonHash);
+    finalWinner = winner;
+    emit DisputeResolved(msg.sender, winner, reasonHash);
     _releaseFunds(winner);
   }
 
@@ -145,7 +192,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
   function resolveByTimeout() external override nonReentrant {
     _requireState(State.DISPUTED);
     require(
-      block.timestamp > disputedAt + DISPUTE_RECOVERY_TIMEOUT,
+      block.timestamp > disputedAt + disputeRecoveryTimeoutSec,
       'Escrow: recovery timeout not reached'
     );
 
@@ -154,6 +201,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     uint256 otherHalf = total - half;
 
     _state = State.RELEASED;
+    disputeWasSplitOrTimeout = true;
 
     _safeTransfer(client, half);
     _safeTransfer(freelancer, otherHalf);
@@ -188,16 +236,16 @@ contract Escrow is IEscrow, ReentrancyGuard {
     uint256 clientShareBps,
     string calldata reasonHash
   ) external override nonReentrant {
-    if (msg.sender != mediator) revert Unauthorized();
+    if (msg.sender != mediator && msg.sender != mediatorBackup) revert Unauthorized();
     _requireState(State.DISPUTED);
     require(clientShareBps <= 10000, 'Escrow: invalid split');
     require(
-      block.timestamp > disputedAt + DISPUTE_RESPONSE_WINDOW,
+      block.timestamp > disputedAt + disputeResponseWindowSec,
       'Escrow: response window active'
     );
 
     _resolutionReasonHash = reasonHash;
-    emit DisputeResolvedSplit(mediator, reasonHash, clientShareBps);
+    emit DisputeResolvedSplit(msg.sender, reasonHash, clientShareBps);
 
     uint256 total = address(this).balance;
     uint256 fee = (total * platformFeeBps) / 10000;
@@ -207,6 +255,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     uint256 freelancerPayout = payout - clientPayout;
 
     _state = State.RELEASED;
+    disputeWasSplitOrTimeout = true;
 
     if (fee > 0 && feeRecipient != address(0)) {
       _safeTransfer(feeRecipient, fee);
@@ -230,7 +279,10 @@ contract Escrow is IEscrow, ReentrancyGuard {
   function autoApprove() external override nonReentrant {
     _requireState(State.SUBMITTED);
     require(_submittedAt > 0, 'Escrow: not submitted');
-    require(block.timestamp > _submittedAt + REVIEW_TIMEOUT, 'Escrow: review timeout not reached');
+    require(
+      block.timestamp > _submittedAt + reviewTimeoutSec,
+      'Escrow: review timeout not reached'
+    );
 
     _state = State.APPROVED;
     emit WorkApproved(client, address(this).balance);
@@ -268,6 +320,8 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
   receive() external payable {}
 
+  fallback() external payable {}
+
   // --- Internal Helpers ---
 
   function _requireState(State expected) internal view {
@@ -283,6 +337,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     uint256 payout = total - fee;
 
     _state = State.RELEASED;
+    finalWinner = winner;
 
     if (fee > 0 && feeRecipient != address(0)) {
       (bool feeOk, ) = feeRecipient.call{value: fee}('');
