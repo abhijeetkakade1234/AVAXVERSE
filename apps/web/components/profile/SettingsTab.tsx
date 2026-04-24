@@ -168,8 +168,6 @@ export default function SettingsTab({ profile, isProfileLoading, displayName, re
             return;
         }
 
-        console.log("Submitting Profile Data:", { name, pfp, bio, twitter, github, skills });
-
         if (!name.trim()) {
             console.error("Name is required.");
             return;

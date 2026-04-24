@@ -7,3 +7,6 @@
 ## 2024-03-14 - Add aria-labels to icon-only buttons
 **Learning:** Found multiple instances where close ("X") buttons for inputs or tags lacked context for screen reader users because they relied entirely on visual cues.
 **Action:** When implementing an icon-only button, always pair it with an `aria-label` (e.g., `aria-label="Remove tag"` or `aria-label="Clear search"`) to ensure the intent is available to assistive technologies.
+## 2024-05-21 - Add aria-labels to notification close buttons
+**Learning:** Found an instance where the close ("X") button for the Snackbar notifications lacked context for screen reader users because it relied entirely on visual cues (the "close" icon). Notifications are critical feedback, and users relying on assistive technologies must be able to understand how to dismiss them.
+**Action:** When implementing an icon-only button to close or dismiss notifications, always add an `aria-label` (e.g., `aria-label="Close notification"`) to ensure the intent is clearly communicated to assistive technologies.
