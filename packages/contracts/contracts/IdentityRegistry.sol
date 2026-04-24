@@ -78,6 +78,7 @@ contract IdentityRegistry is IIdentityRegistry, Initializable, OwnableUpgradeabl
     string calldata metadataURI
   ) external override onlyRegistered(msg.sender) {
     require(bytes(name).length > 0, 'IdentityRegistry: name required');
+    require(bytes(name).length <= 50, 'IdentityRegistry: name too long');
 
     Profile storage profile = _profiles[msg.sender];
 
