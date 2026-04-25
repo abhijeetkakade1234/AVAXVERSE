@@ -23,6 +23,7 @@ import { getDeliverableHref, shortAddr } from '../utils'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 const FLOW_STEPS = ['Posted', 'Applied', 'Selected', 'Accepted', 'Funded', 'Delivered', 'Closed'] as const
+const EVENT_LOOKBACK_BLOCKS = 500000n
 
 function formatDuration(seconds: number): string {
     const clamped = Math.max(0, seconds)
@@ -216,11 +217,13 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         const fetchWithdrawnOperators = async () => {
             if (!publicClient) return
             try {
+                const latestBlock = await publicClient.getBlockNumber()
+                const fromBlock = latestBlock > EVENT_LOOKBACK_BLOCKS ? latestBlock - EVENT_LOOKBACK_BLOCKS : 0n
                 const logs = await publicClient.getLogs({
                     address: CONTRACT_ADDRESSES.EscrowFactory,
                     event: parseAbiItem('event ApplicationStakeWithdrawn(uint256 indexed jobId, address indexed operator, uint256 amount)'),
                     args: { jobId: missionId },
-                    fromBlock: 0n,
+                    fromBlock,
                     toBlock: 'latest',
                 })
                 if (cancelled) return
@@ -233,8 +236,10 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                     }
                 }
                 setWithdrawnOperators(Array.from(uniqueWithdrawn))
-            } catch {
-                if (!cancelled) setWithdrawnOperators([])
+            } catch (error) {
+                if (!cancelled) {
+                    console.warn('Failed to fetch withdraw logs for mission filtering:', error)
+                }
             }
         }
 
@@ -242,26 +247,28 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         return () => {
             cancelled = true
         }
-    }, [publicClient, missionId, hash, isSuccess])
+    }, [publicClient, missionId, hash, isSuccess, applicants?.length])
 
     useEffect(() => {
         let cancelled = false
         const fetchStageTimestamps = async () => {
             if (!publicClient) return
             try {
+                const latestBlock = await publicClient.getBlockNumber()
+                const fromBlock = latestBlock > EVENT_LOOKBACK_BLOCKS ? latestBlock - EVENT_LOOKBACK_BLOCKS : 0n
                 const [selectedLogs, acceptedLogs] = await Promise.all([
                     publicClient.getLogs({
                         address: CONTRACT_ADDRESSES.EscrowFactory,
                         event: parseAbiItem('event OperatorSelected(uint256 indexed jobId, address indexed operator)'),
                         args: { jobId: missionId },
-                        fromBlock: 0n,
+                        fromBlock,
                         toBlock: 'latest',
                     }),
                     publicClient.getLogs({
                         address: CONTRACT_ADDRESSES.EscrowFactory,
                         event: parseAbiItem('event AssignmentAccepted(uint256 indexed jobId, address indexed operator)'),
                         args: { jobId: missionId },
-                        fromBlock: 0n,
+                        fromBlock,
                         toBlock: 'latest',
                     }),
                 ])
@@ -397,8 +404,13 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'applyToJob', args: [missionId, proposal], value: stake })
     }
 
-    const handleSelectOperator = (operator: string) =>
+    const handleSelectOperator = (operator: string) => {
+        if (withdrawnOperatorSet.has(operator.toLowerCase())) {
+            showSnackbar('This operator already withdrew application stake and is no longer selectable.', 'info')
+            return
+        }
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'selectOperator', args: [missionId, operator as `0x${string}`] })
+    }
 
     const handleAcceptAssignment = () =>
         writeContract({ address: CONTRACT_ADDRESSES.EscrowFactory, abi: ESCROW_FACTORY_ABI, functionName: 'acceptAssignment', args: [missionId] })
