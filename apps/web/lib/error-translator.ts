@@ -15,6 +15,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     "escrowfactory: incorrect funding amount": "Funding amount must match the mission budget exactly.",
     "escrowfactory: funding window expired": "Funding window has expired for this mission.",
     "escrow: dispute fee too low": "Dispute fee is below the required minimum.",
+    "escrow: uri too short": "Deliverable link is too short. Paste a full URL, IPFS CID, or proof link.",
     "stake locked": "Your application stake is still locked for this mission state.",
     "stakelocked": "Your application stake is still locked for this mission state.",
     "nostake": "No withdrawable application stake found for this mission.",
