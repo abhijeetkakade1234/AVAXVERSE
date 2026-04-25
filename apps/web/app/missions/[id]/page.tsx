@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Zap, Target } from 'lucide-react'
 import { useAccount, usePublicClient, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther, parseAbiItem } from 'viem'
+import type { AbiEvent } from 'viem'
 import { useSnackbar } from '@/context/SnackbarContext'
 import { isUserRejection, translateError } from '@/lib/error-translator'
 import { CONTRACT_ADDRESSES, ACTIVE_CHAIN, FEATURES } from '@/lib/config'
@@ -23,7 +24,8 @@ import { getDeliverableHref, shortAddr } from '../utils'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const MISSION_STATUS_LABELS = ['OPEN', 'SELECTED', 'ACCEPTED', 'FUNDED', 'CLOSED', 'CANCELLED'] as const
 const FLOW_STEPS = ['Posted', 'Applied', 'Selected', 'Accepted', 'Funded', 'Delivered', 'Closed'] as const
-const EVENT_LOOKBACK_BLOCKS = 500000n
+const EVENT_LOOKBACK_BLOCKS = 20000n
+const MAX_LOG_BLOCK_SPAN = 2000n
 
 function formatDuration(seconds: number): string {
     const clamped = Math.max(0, seconds)
@@ -31,6 +33,39 @@ function formatDuration(seconds: number): string {
     const remSeconds = clamped % 60
     if (minutes > 0) return `${minutes}m ${remSeconds}s`
     return `${remSeconds}s`
+}
+
+async function getLogsChunked({
+    publicClient,
+    address,
+    event,
+    args,
+    fromBlock,
+    toBlock,
+}: {
+    publicClient: ReturnType<typeof usePublicClient>
+    address: `0x${string}`
+    event: AbiEvent
+    args?: Record<string, unknown>
+    fromBlock: bigint
+    toBlock: bigint
+}) {
+    if (!publicClient) return []
+    const allLogs: Array<{ args: Record<string, unknown>; blockNumber?: bigint }> = []
+    let cursor = fromBlock
+    while (cursor <= toBlock) {
+        const end = cursor + MAX_LOG_BLOCK_SPAN > toBlock ? toBlock : cursor + MAX_LOG_BLOCK_SPAN
+        const logs = await publicClient.getLogs({
+            address,
+            event,
+            args,
+            fromBlock: cursor,
+            toBlock: end,
+        })
+        allLogs.push(...(logs as Array<{ args: Record<string, unknown>; blockNumber?: bigint }>))
+        cursor = end + 1n
+    }
+    return allLogs
 }
 
 export default function MissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -219,18 +254,19 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
             try {
                 const latestBlock = await publicClient.getBlockNumber()
                 const fromBlock = latestBlock > EVENT_LOOKBACK_BLOCKS ? latestBlock - EVENT_LOOKBACK_BLOCKS : 0n
-                const logs = await publicClient.getLogs({
+                const logs = await getLogsChunked({
+                    publicClient,
                     address: CONTRACT_ADDRESSES.EscrowFactory,
-                    event: parseAbiItem('event ApplicationStakeWithdrawn(uint256 indexed jobId, address indexed operator, uint256 amount)'),
+                    event: parseAbiItem('event ApplicationStakeWithdrawn(uint256 indexed jobId, address indexed operator, uint256 amount)') as AbiEvent,
                     args: { jobId: missionId },
                     fromBlock,
-                    toBlock: 'latest',
+                    toBlock: latestBlock,
                 })
                 if (cancelled) return
                 const uniqueWithdrawn = new Set<string>()
                 for (const log of logs) {
-                    const operator = (log.args.operator as string | undefined)?.toLowerCase()
-                    const amount = log.args.amount as bigint | undefined
+                    const operator = (log.args?.operator as string | undefined)?.toLowerCase()
+                    const amount = log.args?.amount as bigint | undefined
                     if (operator && amount !== undefined && amount > 0n) {
                         uniqueWithdrawn.add(operator)
                     }
@@ -257,19 +293,21 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                 const latestBlock = await publicClient.getBlockNumber()
                 const fromBlock = latestBlock > EVENT_LOOKBACK_BLOCKS ? latestBlock - EVENT_LOOKBACK_BLOCKS : 0n
                 const [selectedLogs, acceptedLogs] = await Promise.all([
-                    publicClient.getLogs({
+                    getLogsChunked({
+                        publicClient,
                         address: CONTRACT_ADDRESSES.EscrowFactory,
-                        event: parseAbiItem('event OperatorSelected(uint256 indexed jobId, address indexed operator)'),
+                        event: parseAbiItem('event OperatorSelected(uint256 indexed jobId, address indexed operator)') as AbiEvent,
                         args: { jobId: missionId },
                         fromBlock,
-                        toBlock: 'latest',
+                        toBlock: latestBlock,
                     }),
-                    publicClient.getLogs({
+                    getLogsChunked({
+                        publicClient,
                         address: CONTRACT_ADDRESSES.EscrowFactory,
-                        event: parseAbiItem('event AssignmentAccepted(uint256 indexed jobId, address indexed operator)'),
+                        event: parseAbiItem('event AssignmentAccepted(uint256 indexed jobId, address indexed operator)') as AbiEvent,
                         args: { jobId: missionId },
                         fromBlock,
-                        toBlock: 'latest',
+                        toBlock: latestBlock,
                     }),
                 ])
 
