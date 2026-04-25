@@ -793,8 +793,22 @@ export default function MissionDetailPage({ params }: { params: Promise<{ id: st
                                                     value={workUrl}
                                                     onChange={e => { setWorkUrl(e.target.value); setLocalError(null) }}
                                                 />
+                                                <p className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                                                    Add a real proof link (minimum 10 characters).
+                                                </p>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => { const c = workUrl.trim(); if (!c) { notifyLocalError('Deliverable cannot be empty.'); return } handleSubmitWork(c) }} disabled={isTxBusy} className="flex-1 py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40">
+                                                    <button onClick={() => {
+                                                        const c = workUrl.trim()
+                                                        if (!c) {
+                                                            notifyLocalError('Deliverable cannot be empty.')
+                                                            return
+                                                        }
+                                                        if (c.length < 10) {
+                                                            notifyLocalError('Deliverable link is too short. Paste a full URL, IPFS CID, or proof link.')
+                                                            return
+                                                        }
+                                                        handleSubmitWork(c)
+                                                    }} disabled={isTxBusy} className="flex-1 py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-40">
                                                         {isTxBusy ? 'Submitting...' : 'Confirm Submit'}
                                                     </button>
                                                     <button onClick={() => setShowSubmitInput(false)} className="px-4 py-3 rounded-xl border border-white/20">Cancel</button>
